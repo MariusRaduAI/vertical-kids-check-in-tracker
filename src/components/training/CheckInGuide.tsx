@@ -106,9 +106,8 @@ const CheckInGuide: React.FC = () => {
                   <ol className="list-decimal ml-6 mt-2 space-y-1">
                     <li><span className="font-medium">Pentru copil</span> - se aplică pe spatele copilului</li>
                     <li><span className="font-medium">Pentru părinte</span> - pentru identificare la preluare</li>
-                    <li><span className="font-medium">Pentru materialele copilului</span> - geantă, haine etc.</li>
+                    <li><span className="font-medium">Pentru învățător</span> - pentru a efectua check-in și check-out în clasă</li>
                   </ol>
-                  <p className="mt-2">Poți ajusta numărul de etichete în funcție de necesități (1-5 etichete).</p>
                 </AccordionContent>
               </AccordionItem>
 
