@@ -57,7 +57,7 @@ const AppSidebar: React.FC = () => {
       section: "Principal",
     },
     {
-      title: "Analize",
+      title: "Dashboard & Analize",
       url: "/analytics",
       icon: BarChart3,
       section: "Avansate",

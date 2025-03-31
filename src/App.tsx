@@ -28,7 +28,7 @@ const App = () => (
             <Route path="/checkin" element={<MainLayout><CheckIn /></MainLayout>} />
             <Route path="/attendance" element={<MainLayout><AttendancePage /></MainLayout>} />
             <Route path="/members" element={<MainLayout><MembersPage /></MainLayout>} />
-            <Route path="/analytics" element={<MainLayout><Analytics /></MainLayout>} />
+            <Route path="/analytics" element={<MainLayout><Dashboard /></MainLayout>} />
             <Route path="/settings" element={<MainLayout><SettingsPage /></MainLayout>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
