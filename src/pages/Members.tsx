@@ -58,8 +58,6 @@ const MembersPage: React.FC = () => {
     parents: [""],
     phone: "",
     email: "",
-    loveLanguage: "",
-    profile: "",
     hasAllergies: false,
     allergiesDetails: "",
     hasSpecialNeeds: false,
@@ -88,8 +86,6 @@ const MembersPage: React.FC = () => {
       parents: [""],
       phone: "",
       email: "",
-      loveLanguage: "",
-      profile: "",
       hasAllergies: false,
       allergiesDetails: "",
       hasSpecialNeeds: false,
@@ -110,8 +106,6 @@ const MembersPage: React.FC = () => {
       parents: [...child.parents],
       phone: child.phone || "",
       email: child.email || "",
-      loveLanguage: child.loveLanguage || "",
-      profile: child.profile || "",
       hasAllergies: child.hasAllergies || false,
       allergiesDetails: child.allergiesDetails || "",
       hasSpecialNeeds: child.hasSpecialNeeds || false,
@@ -187,8 +181,6 @@ const MembersPage: React.FC = () => {
         parents: childFormData.parents || [],
         phone: childFormData.phone,
         email: childFormData.email,
-        loveLanguage: childFormData.loveLanguage,
-        profile: childFormData.profile,
         hasAllergies: childFormData.hasAllergies,
         allergiesDetails: childFormData.allergiesDetails,
         hasSpecialNeeds: childFormData.hasSpecialNeeds,
@@ -464,51 +456,6 @@ const MembersPage: React.FC = () => {
                   value={childFormData.email}
                   onChange={handleInputChange}
                 />
-              </div>
-            </div>
-            
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="loveLanguage">Limbaj de Dragoste</Label>
-                <Select
-                  name="loveLanguage"
-                  value={childFormData.loveLanguage}
-                  onValueChange={(value) => 
-                    setChildFormData(prev => ({ ...prev, loveLanguage: value }))
-                  }
-                >
-                  <SelectTrigger id="loveLanguage">
-                    <SelectValue placeholder="Selectează limbajul" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Timp de calitate">Timp de calitate</SelectItem>
-                    <SelectItem value="Cuvinte de încurajare">Cuvinte de încurajare</SelectItem>
-                    <SelectItem value="Daruri">Daruri</SelectItem>
-                    <SelectItem value="Servicii">Servicii</SelectItem>
-                    <SelectItem value="Atingere fizică">Atingere fizică</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="profile">Profil</Label>
-                <Select
-                  name="profile"
-                  value={childFormData.profile}
-                  onValueChange={(value) => 
-                    setChildFormData(prev => ({ ...prev, profile: value }))
-                  }
-                >
-                  <SelectTrigger id="profile">
-                    <SelectValue placeholder="Selectează profilul" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Jucăuș">Jucăuș</SelectItem>
-                    <SelectItem value="Timid">Timid</SelectItem>
-                    <SelectItem value="Creativ">Creativ</SelectItem>
-                    <SelectItem value="Energic">Energic</SelectItem>
-                    <SelectItem value="Curios">Curios</SelectItem>
-                  </SelectContent>
-                </Select>
               </div>
             </div>
             
