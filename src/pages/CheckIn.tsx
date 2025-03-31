@@ -25,7 +25,7 @@ import { format } from "date-fns";
 import AgeGroupBadge from "@/components/common/AgeGroupBadge";
 import CategoryBadge from "@/components/common/CategoryBadge";
 import { Child, AgeGroup } from "@/types/models";
-import { Search, AlertTriangle, Tag, Printer } from "lucide-react";
+import { Search, AlertTriangle, Tag, Printer, CheckCircle } from "lucide-react";
 import { 
   Dialog, 
   DialogContent, 
@@ -59,11 +59,8 @@ const CheckIn: React.FC = () => {
     ageGroup: "4-6" as AgeGroup,
   });
   
-  const [medicalCheck, setMedicalCheck] = useState({
-    temperature: false,
-    noSymptoms: false,
-    goodCondition: false,
-  });
+  // Replace the three medical check items with a single comprehensive check
+  const [medicalCheckComplete, setMedicalCheckComplete] = useState(false);
 
   const [tagOpen, setTagOpen] = useState(false);
   const [tagCount, setTagCount] = useState(3);
@@ -156,20 +153,27 @@ const CheckIn: React.FC = () => {
   const handleCheckIn = () => {
     if (!selectedChild) return;
 
-    // Check if all medical checks are checked
-    if (!medicalCheck.temperature || !medicalCheck.noSymptoms || !medicalCheck.goodCondition) {
+    // Check if medical check is completed
+    if (!medicalCheckComplete) {
       toast({
         title: "Verificare medicală necesară",
-        description: "Toate verificările medicale trebuie să fie confirmate înainte de a genera eticheta.",
+        description: "Verificarea medicală completă este obligatorie înainte de a genera eticheta.",
         variant: "destructive",
       });
       return;
     }
 
+    // Use the same structure for backward compatibility with the AppContext
+    const medicalCheckData = {
+      temperature: true,
+      noSymptoms: true,
+      goodCondition: true
+    };
+
     const attendanceRecord = checkInChild(
       selectedChild.id,
       program,
-      medicalCheck
+      medicalCheckData
     );
 
     if (attendanceRecord) {
@@ -195,11 +199,7 @@ const CheckIn: React.FC = () => {
     // Reset form for next check-in
     setSelectedChild(null);
     setSearchQuery("");
-    setMedicalCheck({
-      temperature: false,
-      noSymptoms: false,
-      goodCondition: false,
-    });
+    setMedicalCheckComplete(false);
   };
 
   // Reset everything
@@ -207,11 +207,7 @@ const CheckIn: React.FC = () => {
     setSelectedChild(null);
     setSearchQuery("");
     setIsNewChild(false);
-    setMedicalCheck({
-      temperature: false,
-      noSymptoms: false,
-      goodCondition: false,
-    });
+    setMedicalCheckComplete(false);
   };
 
   return (
@@ -376,49 +372,24 @@ const CheckIn: React.FC = () => {
                     </Select>
                   </div>
 
+                  {/* Replace the three checkboxes with a single medical check checkbox */}
                   <div className="space-y-2">
                     <h4 className="font-medium">Verificare medicală</h4>
-                    <div className="space-y-2">
-                      <div className="flex items-center space-x-2">
-                        <Checkbox
-                          id="temperature"
-                          checked={medicalCheck.temperature}
-                          onCheckedChange={(checked) =>
-                            setMedicalCheck({
-                              ...medicalCheck,
-                              temperature: checked === true,
-                            })
-                          }
-                        />
-                        <Label htmlFor="temperature">Verificat temperatură</Label>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Checkbox
-                          id="noSymptoms"
-                          checked={medicalCheck.noSymptoms}
-                          onCheckedChange={(checked) =>
-                            setMedicalCheck({
-                              ...medicalCheck,
-                              noSymptoms: checked === true,
-                            })
-                          }
-                        />
-                        <Label htmlFor="noSymptoms">
-                          Nu are tuse/febră sau alte simptome care se transmit
+                    <div className="flex items-start space-x-2 p-4 rounded-md border border-gray-200 bg-gray-50">
+                      <Checkbox
+                        id="medicalCheckComplete"
+                        checked={medicalCheckComplete}
+                        onCheckedChange={(checked) => setMedicalCheckComplete(checked === true)}
+                        className="mt-1"
+                      />
+                      <div className="space-y-1">
+                        <Label htmlFor="medicalCheckComplete" className="font-medium">
+                          Confirmă verificarea medicală completă
                         </Label>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Checkbox
-                          id="goodCondition"
-                          checked={medicalCheck.goodCondition}
-                          onCheckedChange={(checked) =>
-                            setMedicalCheck({
-                              ...medicalCheck,
-                              goodCondition: checked === true,
-                            })
-                          }
-                        />
-                        <Label htmlFor="goodCondition">Stare generală bună</Label>
+                        <p className="text-sm text-muted-foreground">
+                          Confirm că am verificat temperatura, copilul nu prezintă simptome (tuse/febră) 
+                          și este într-o stare generală bună.
+                        </p>
                       </div>
                     </div>
                   </div>
@@ -431,12 +402,7 @@ const CheckIn: React.FC = () => {
               </Button>
               <Button
                 onClick={handleCheckIn}
-                disabled={
-                  !selectedChild ||
-                  !medicalCheck.temperature ||
-                  !medicalCheck.noSymptoms ||
-                  !medicalCheck.goodCondition
-                }
+                disabled={!selectedChild || !medicalCheckComplete}
               >
                 <Tag className="mr-2 h-4 w-4" />
                 Generează Etichetă

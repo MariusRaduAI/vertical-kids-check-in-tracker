@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { Child, Attendance, AttendanceSummary } from "../types/models";
 import { 
@@ -34,6 +33,9 @@ interface AppContextType {
   
   // Statistics
   getTotalPresentToday: () => { totalP1: number; totalP2: number; total: number };
+  
+  // Added for the attendance page
+  sundays: string[];
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -44,6 +46,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children:
   const [summaries, setSummaries] = useState<Record<string, AttendanceSummary>>(mockSummaries);
   const [currentSunday, setCurrentSunday] = useState<string>(getCurrentSunday());
   const { toast } = useToast();
+  
+  // Create a list of Sundays for the attendance page
+  const sundays = Object.keys(mockSummaries).sort((a, b) => 
+    new Date(a).getTime() - new Date(b).getTime()
+  );
 
   // Child operations
   const addChild = (childData: Omit<Child, "id" | "createdAt" | "updatedAt">) => {
@@ -249,6 +256,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children:
     attendance,
     summaries,
     currentSunday,
+    sundays,
     
     // Child operations
     addChild,
