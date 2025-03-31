@@ -33,7 +33,7 @@ const AppSidebar: React.FC = () => {
 
   const menuItems = [
     {
-      title: "Dashboard",
+      title: "Dashboard & Analize",
       url: "/",
       icon: Home,
       section: "Principal",
@@ -55,12 +55,6 @@ const AppSidebar: React.FC = () => {
       url: "/members",
       icon: Users,
       section: "Principal",
-    },
-    {
-      title: "Dashboard & Analize",
-      url: "/analytics",
-      icon: BarChart3,
-      section: "Avansate",
     },
     {
       title: "Setări",

@@ -15,7 +15,8 @@ import {
 } from "recharts";
 
 interface AttendanceData {
-  date: string;
+  date?: string;
+  month?: string;
   P1: number;
   P2: number;
   total: number;
@@ -36,6 +37,9 @@ const AttendanceTrendsChart: React.FC<AttendanceTrendsChartProps> = ({
   description,
   chartType = "bar" 
 }) => {
+  // Determine which key to use for the X-axis (date or month)
+  const xAxisKey = data[0]?.month ? "month" : "date";
+  
   return (
     <Card>
       <CardHeader>
@@ -47,7 +51,7 @@ const AttendanceTrendsChart: React.FC<AttendanceTrendsChartProps> = ({
           {chartType === "bar" ? (
             <BarChart data={data}>
               <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="date" />
+              <XAxis dataKey={xAxisKey} />
               <YAxis />
               <Tooltip />
               <Legend />
@@ -58,7 +62,7 @@ const AttendanceTrendsChart: React.FC<AttendanceTrendsChartProps> = ({
           ) : (
             <LineChart data={data}>
               <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="date" />
+              <XAxis dataKey={xAxisKey} />
               <YAxis />
               <Tooltip />
               <Legend />
