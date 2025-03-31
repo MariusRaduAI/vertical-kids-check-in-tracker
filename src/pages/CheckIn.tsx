@@ -35,6 +35,11 @@ import {
   DialogFooter
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
+import { 
+  Popover, 
+  PopoverContent, 
+  PopoverTrigger 
+} from "@/components/ui/popover";
 
 const CheckIn: React.FC = () => {
   const {
@@ -208,6 +213,67 @@ const CheckIn: React.FC = () => {
     setSearchQuery("");
     setIsNewChild(false);
     setMedicalCheckComplete(false);
+  };
+
+  // Render tag preview component
+  const TagPreview = ({ tag }: { tag: typeof generatedTag }) => {
+    if (!tag) return null;
+    
+    return (
+      <div className="border-2 border-primary rounded-lg p-6 my-4 space-y-4 bg-white shadow-md">
+        <div className="text-center space-y-2">
+          <h3 className="text-2xl font-bold">{tag.childName}</h3>
+          <div className="text-xl font-mono tracking-wider">
+            {tag.uniqueCode}
+          </div>
+        </div>
+        
+        <div className="flex justify-between items-center">
+          <AgeGroupBadge ageGroup={tag.ageGroup} className="text-sm" />
+          <div className="px-2 py-1 bg-primary text-white rounded-full text-sm">
+            {tag.program}
+          </div>
+        </div>
+        
+        <div className="text-center text-sm">
+          {tag.date}
+        </div>
+      </div>
+    );
+  };
+
+  // Live tag preview popover
+  const LiveTagPreview = () => {
+    if (!selectedChild) return null;
+    
+    // Generate a preview tag object for display
+    const previewTag = {
+      childName: selectedChild.fullName,
+      uniqueCode: `${selectedChild.firstName.charAt(0)}${selectedChild.lastName.charAt(0)}--${program}`,
+      ageGroup: selectedChild.ageGroup,
+      program,
+      date: format(new Date(currentSunday), "dd.MM.yyyy"),
+    };
+    
+    return (
+      <Popover>
+        <PopoverTrigger asChild>
+          <Button variant="outline" size="sm" className="flex gap-2">
+            <Tag className="h-4 w-4" />
+            Previzualizare etichetă
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-80 p-0">
+          <div className="p-4">
+            <h4 className="font-semibold mb-2">Previzualizare etichetă</h4>
+            <TagPreview tag={previewTag} />
+            <p className="text-xs text-muted-foreground mt-2">
+              Aceasta este o previzualizare. Codul unic final va fi generat la check-in.
+            </p>
+          </div>
+        </PopoverContent>
+      </Popover>
+    );
   };
 
   return (
@@ -393,6 +459,11 @@ const CheckIn: React.FC = () => {
                       </div>
                     </div>
                   </div>
+
+                  {/* Add live tag preview button */}
+                  <div className="flex justify-end">
+                    <LiveTagPreview />
+                  </div>
                 </div>
               )}
             </CardContent>
@@ -471,7 +542,7 @@ const CheckIn: React.FC = () => {
         </div>
       </div>
 
-      {/* Tag Generation Dialog */}
+      {/* Tag Generation Dialog with enhanced preview */}
       <Dialog open={tagOpen} onOpenChange={setTagOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
@@ -481,27 +552,7 @@ const CheckIn: React.FC = () => {
             </DialogDescription>
           </DialogHeader>
           
-          {generatedTag && (
-            <div className="border rounded-lg p-6 my-4 space-y-4 bg-white">
-              <div className="text-center space-y-2">
-                <h3 className="text-2xl font-bold">{generatedTag.childName}</h3>
-                <div className="text-xl font-mono tracking-wider">
-                  {generatedTag.uniqueCode}
-                </div>
-              </div>
-              
-              <div className="flex justify-between items-center">
-                <AgeGroupBadge ageGroup={generatedTag.ageGroup} className="text-sm" />
-                <div className="px-2 py-1 bg-primary text-white rounded-full text-sm">
-                  {generatedTag.program}
-                </div>
-              </div>
-              
-              <div className="text-center text-sm">
-                {generatedTag.date}
-              </div>
-            </div>
-          )}
+          {generatedTag && <TagPreview tag={generatedTag} />}
           
           <div className="space-y-4">
             <div className="flex items-center space-x-2">
