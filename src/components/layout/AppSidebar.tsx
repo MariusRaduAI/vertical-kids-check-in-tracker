@@ -19,8 +19,8 @@ import {
   Home,
   Settings,
   Users,
-  BarChart3,
   Tag,
+  BookOpen,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -55,6 +55,12 @@ const AppSidebar: React.FC = () => {
       url: "/members",
       icon: Users,
       section: "Principal",
+    },
+    {
+      title: "Training & Onboarding",
+      url: "/training",
+      icon: BookOpen,
+      section: "Suport",
     },
     {
       title: "Setări",

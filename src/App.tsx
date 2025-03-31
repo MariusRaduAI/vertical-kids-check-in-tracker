@@ -12,6 +12,7 @@ import CheckIn from "./pages/CheckIn";
 import AttendancePage from "./pages/Attendance";
 import MembersPage from "./pages/Members";
 import SettingsPage from "./pages/Settings";
+import Training from "./pages/Training";
 
 const queryClient = new QueryClient();
 
@@ -28,6 +29,7 @@ const App = () => (
             <Route path="/attendance" element={<MainLayout><AttendancePage /></MainLayout>} />
             <Route path="/members" element={<MainLayout><MembersPage /></MainLayout>} />
             <Route path="/settings" element={<MainLayout><SettingsPage /></MainLayout>} />
+            <Route path="/training" element={<MainLayout><Training /></MainLayout>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
