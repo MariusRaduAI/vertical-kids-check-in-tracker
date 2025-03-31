@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useApp } from "@/context/AppContext";
 import PageHeader from "@/components/common/PageHeader";
@@ -44,10 +43,8 @@ import { Label } from "@/components/ui/label";
 const MembersPage: React.FC = () => {
   const { children, addChild, updateChild } = useApp();
   
-  // Search state
   const [searchQuery, setSearchQuery] = useState("");
   
-  // Add/Edit child dialog state
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [selectedChildId, setSelectedChildId] = useState<string | null>(null);
@@ -64,7 +61,6 @@ const MembersPage: React.FC = () => {
     profile: ""
   });
   
-  // Get filtered children
   const getFilteredChildren = () => {
     if (!searchQuery) return children;
     
@@ -75,7 +71,6 @@ const MembersPage: React.FC = () => {
     );
   };
   
-  // Handle add new child button click
   const handleAddNewClick = () => {
     setIsEditing(false);
     setSelectedChildId(null);
@@ -94,7 +89,6 @@ const MembersPage: React.FC = () => {
     setIsDialogOpen(true);
   };
   
-  // Handle edit child button click
   const handleEditClick = (child: Child) => {
     setIsEditing(true);
     setSelectedChildId(child.id);
@@ -113,7 +107,6 @@ const MembersPage: React.FC = () => {
     setIsDialogOpen(true);
   };
   
-  // Handle form input change
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
@@ -124,7 +117,6 @@ const MembersPage: React.FC = () => {
     }));
   };
   
-  // Handle parent input change
   const handleParentChange = (index: number, value: string) => {
     const newParents = [...(childFormData.parents || [])];
     newParents[index] = value;
@@ -134,7 +126,6 @@ const MembersPage: React.FC = () => {
     }));
   };
   
-  // Handle add parent
   const handleAddParent = () => {
     setChildFormData(prev => ({
       ...prev,
@@ -142,7 +133,6 @@ const MembersPage: React.FC = () => {
     }));
   };
   
-  // Handle remove parent
   const handleRemoveParent = (index: number) => {
     const newParents = [...(childFormData.parents || [])];
     newParents.splice(index, 1);
@@ -152,30 +142,26 @@ const MembersPage: React.FC = () => {
     }));
   };
   
-  // Handle save child
   const handleSaveChild = () => {
     if (!childFormData.firstName || !childFormData.lastName) {
-      // Show error
       return;
     }
     
     const fullName = `${childFormData.firstName} ${childFormData.lastName}`;
     
     if (isEditing && selectedChildId) {
-      // Update existing child
       updateChild(selectedChildId, {
         ...childFormData,
         fullName
       });
     } else {
-      // Add new child
       addChild({
         firstName: childFormData.firstName || "",
         lastName: childFormData.lastName || "",
         fullName: fullName,
         birthDate: childFormData.birthDate || format(new Date(), "yyyy-MM-dd"),
-        age: 0, // Will be calculated
-        daysUntilBirthday: 0, // Will be calculated
+        age: 0,
+        daysUntilBirthday: 0,
         ageGroup: childFormData.ageGroup as AgeGroup,
         category: childFormData.category as "Membru" | "Guest",
         parents: childFormData.parents || [],
@@ -236,7 +222,6 @@ const MembersPage: React.FC = () => {
                   <TableHead>Categorie</TableHead>
                   <TableHead>Părinți</TableHead>
                   <TableHead>Contact</TableHead>
-                  <TableHead>Profil</TableHead>
                   <TableHead className="text-right">Acțiuni</TableHead>
                 </TableRow>
               </TableHeader>
@@ -280,20 +265,6 @@ const MembersPage: React.FC = () => {
                         {child.email && <div className="text-xs text-muted-foreground">{child.email}</div>}
                       </div>
                     </TableCell>
-                    <TableCell>
-                      <div className="max-w-[150px]">
-                        {child.loveLanguage && (
-                          <div className="text-xs">
-                            <span className="font-medium">Limbaj:</span> {child.loveLanguage}
-                          </div>
-                        )}
-                        {child.profile && (
-                          <div className="text-xs">
-                            <span className="font-medium">Profil:</span> {child.profile}
-                          </div>
-                        )}
-                      </div>
-                    </TableCell>
                     <TableCell className="text-right">
                       <Button variant="ghost" size="sm" onClick={() => handleEditClick(child)}>
                         <Edit className="h-4 w-4" />
@@ -307,7 +278,6 @@ const MembersPage: React.FC = () => {
         </CardContent>
       </Card>
       
-      {/* Add/Edit Child Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="sm:max-w-[600px]">
           <DialogHeader>
