@@ -84,7 +84,7 @@ const AppSidebar: React.FC = () => {
       <SidebarHeader className="h-16 flex items-center px-6">
         <div className="flex items-center gap-2">
           <Clipboard className="h-6 w-6 text-primary" />
-          <span className="font-bold text-lg">Școala Duminicală</span>
+          <span className="font-bold text-lg">Vertical Kids Check-In Tracker</span>
         </div>
         <SidebarTrigger className="ml-auto lg:hidden" />
       </SidebarHeader>

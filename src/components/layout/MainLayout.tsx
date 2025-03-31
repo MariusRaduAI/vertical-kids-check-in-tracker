@@ -19,7 +19,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
             {children}
           </main>
           <footer className="py-4 px-6 border-t text-center text-sm text-muted-foreground">
-            <p>Școala Duminicală © {new Date().getFullYear()}</p>
+            <p>Vertical Kids București © {new Date().getFullYear()}</p>
           </footer>
         </div>
       </div>
