@@ -14,6 +14,10 @@ export interface Child {
   email?: string;
   loveLanguage?: string;
   profile?: string;
+  hasAllergies?: boolean;
+  allergiesDetails?: string;
+  hasSpecialNeeds?: boolean;
+  specialNeedsDetails?: string;
   createdAt: string;
   updatedAt: string;
 }

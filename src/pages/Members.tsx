@@ -37,8 +37,9 @@ import { format, parseISO } from "date-fns";
 import AgeGroupBadge from "@/components/common/AgeGroupBadge";
 import CategoryBadge from "@/components/common/CategoryBadge";
 import { Child, AgeGroup } from "@/types/models";
-import { Search, PlusCircle, Edit, Download } from "lucide-react";
+import { Search, PlusCircle, Edit, Download, AlertTriangle } from "lucide-react";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 
 const MembersPage: React.FC = () => {
   const { children, addChild, updateChild } = useApp();
@@ -58,7 +59,11 @@ const MembersPage: React.FC = () => {
     phone: "",
     email: "",
     loveLanguage: "",
-    profile: ""
+    profile: "",
+    hasAllergies: false,
+    allergiesDetails: "",
+    hasSpecialNeeds: false,
+    specialNeedsDetails: ""
   });
   
   const getFilteredChildren = () => {
@@ -84,7 +89,11 @@ const MembersPage: React.FC = () => {
       phone: "",
       email: "",
       loveLanguage: "",
-      profile: ""
+      profile: "",
+      hasAllergies: false,
+      allergiesDetails: "",
+      hasSpecialNeeds: false,
+      specialNeedsDetails: ""
     });
     setIsDialogOpen(true);
   };
@@ -102,7 +111,11 @@ const MembersPage: React.FC = () => {
       phone: child.phone || "",
       email: child.email || "",
       loveLanguage: child.loveLanguage || "",
-      profile: child.profile || ""
+      profile: child.profile || "",
+      hasAllergies: child.hasAllergies || false,
+      allergiesDetails: child.allergiesDetails || "",
+      hasSpecialNeeds: child.hasSpecialNeeds || false,
+      specialNeedsDetails: child.specialNeedsDetails || ""
     });
     setIsDialogOpen(true);
   };
@@ -142,6 +155,13 @@ const MembersPage: React.FC = () => {
     }));
   };
   
+  const handleCheckboxChange = (field: string, checked: boolean) => {
+    setChildFormData(prev => ({
+      ...prev,
+      [field]: checked
+    }));
+  };
+  
   const handleSaveChild = () => {
     if (!childFormData.firstName || !childFormData.lastName) {
       return;
@@ -168,7 +188,11 @@ const MembersPage: React.FC = () => {
         phone: childFormData.phone,
         email: childFormData.email,
         loveLanguage: childFormData.loveLanguage,
-        profile: childFormData.profile
+        profile: childFormData.profile,
+        hasAllergies: childFormData.hasAllergies,
+        allergiesDetails: childFormData.allergiesDetails,
+        hasSpecialNeeds: childFormData.hasSpecialNeeds,
+        specialNeedsDetails: childFormData.specialNeedsDetails
       });
     }
     
@@ -222,6 +246,8 @@ const MembersPage: React.FC = () => {
                   <TableHead>Categorie</TableHead>
                   <TableHead>Părinți</TableHead>
                   <TableHead>Contact</TableHead>
+                  <TableHead>Alergii</TableHead>
+                  <TableHead>Nevoi Speciale</TableHead>
                   <TableHead className="text-right">Acțiuni</TableHead>
                 </TableRow>
               </TableHeader>
@@ -264,6 +290,26 @@ const MembersPage: React.FC = () => {
                         {child.phone && <div>{child.phone}</div>}
                         {child.email && <div className="text-xs text-muted-foreground">{child.email}</div>}
                       </div>
+                    </TableCell>
+                    <TableCell>
+                      {child.hasAllergies ? (
+                        <div className="flex items-start">
+                          <AlertTriangle className="h-4 w-4 text-yellow-500 mr-1 mt-0.5 flex-shrink-0" />
+                          <span className="text-xs">{child.allergiesDetails}</span>
+                        </div>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">Nu</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {child.hasSpecialNeeds ? (
+                        <div className="flex items-start">
+                          <AlertTriangle className="h-4 w-4 text-blue-500 mr-1 mt-0.5 flex-shrink-0" />
+                          <span className="text-xs">{child.specialNeedsDetails}</span>
+                        </div>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">Nu</span>
+                      )}
                     </TableCell>
                     <TableCell className="text-right">
                       <Button variant="ghost" size="sm" onClick={() => handleEditClick(child)}>
@@ -464,6 +510,58 @@ const MembersPage: React.FC = () => {
                   </SelectContent>
                 </Select>
               </div>
+            </div>
+            
+            <div className="space-y-4 border p-4 rounded-md">
+              <div className="flex items-center space-x-2">
+                <Checkbox 
+                  id="hasAllergies" 
+                  checked={childFormData.hasAllergies}
+                  onCheckedChange={(checked) => 
+                    handleCheckboxChange('hasAllergies', checked === true)
+                  } 
+                />
+                <Label htmlFor="hasAllergies" className="font-medium">Are alergii</Label>
+              </div>
+              
+              {childFormData.hasAllergies && (
+                <div className="space-y-2">
+                  <Label htmlFor="allergiesDetails">Detalii alergii</Label>
+                  <Input
+                    id="allergiesDetails"
+                    name="allergiesDetails"
+                    value={childFormData.allergiesDetails}
+                    onChange={handleInputChange}
+                    placeholder="Specificați alergiile"
+                  />
+                </div>
+              )}
+            </div>
+            
+            <div className="space-y-4 border p-4 rounded-md">
+              <div className="flex items-center space-x-2">
+                <Checkbox 
+                  id="hasSpecialNeeds" 
+                  checked={childFormData.hasSpecialNeeds}
+                  onCheckedChange={(checked) => 
+                    handleCheckboxChange('hasSpecialNeeds', checked === true)
+                  } 
+                />
+                <Label htmlFor="hasSpecialNeeds" className="font-medium">Are nevoi speciale</Label>
+              </div>
+              
+              {childFormData.hasSpecialNeeds && (
+                <div className="space-y-2">
+                  <Label htmlFor="specialNeedsDetails">Detalii nevoi speciale</Label>
+                  <Input
+                    id="specialNeedsDetails"
+                    name="specialNeedsDetails"
+                    value={childFormData.specialNeedsDetails}
+                    onChange={handleInputChange}
+                    placeholder="Ex: ADHD, sindrom Down, etc."
+                  />
+                </div>
+              )}
             </div>
           </div>
           
