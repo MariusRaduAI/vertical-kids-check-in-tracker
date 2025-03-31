@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { Child, Attendance, AttendanceSummary } from "../types/models";
 import { 
@@ -40,24 +41,66 @@ interface AppContextType {
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
+// Storage keys for localStorage
+const STORAGE_KEYS = {
+  CHILDREN: 'scoala-duminicala-children',
+  ATTENDANCE: 'scoala-duminicala-attendance',
+  SUMMARIES: 'scoala-duminicala-summaries',
+  CURRENT_SUNDAY: 'scoala-duminicala-current-sunday'
+};
+
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children: reactChildren }) => {
-  const [children, setChildren] = useState<Child[]>(mockChildren);
-  const [attendance, setAttendance] = useState<Attendance[]>(mockAttendance);
-  const [summaries, setSummaries] = useState<Record<string, AttendanceSummary>>(mockSummaries);
-  const [currentSunday, setCurrentSunday] = useState<string>(getCurrentSunday());
+  // Initialize state with data from localStorage or fallback to mock data
+  const [children, setChildren] = useState<Child[]>(() => {
+    const storedChildren = localStorage.getItem(STORAGE_KEYS.CHILDREN);
+    return storedChildren ? JSON.parse(storedChildren) : mockChildren;
+  });
+  
+  const [attendance, setAttendance] = useState<Attendance[]>(() => {
+    const storedAttendance = localStorage.getItem(STORAGE_KEYS.ATTENDANCE);
+    return storedAttendance ? JSON.parse(storedAttendance) : mockAttendance;
+  });
+  
+  const [summaries, setSummaries] = useState<Record<string, AttendanceSummary>>(() => {
+    const storedSummaries = localStorage.getItem(STORAGE_KEYS.SUMMARIES);
+    return storedSummaries ? JSON.parse(storedSummaries) : mockSummaries;
+  });
+  
+  const [currentSunday, setCurrentSunday] = useState<string>(() => {
+    const storedSunday = localStorage.getItem(STORAGE_KEYS.CURRENT_SUNDAY);
+    return storedSunday || getCurrentSunday();
+  });
+  
   const { toast } = useToast();
   
   // Create a list of Sundays for the attendance page
-  const sundays = Object.keys(mockSummaries).sort((a, b) => 
+  const sundays = Object.keys(summaries).sort((a, b) => 
     new Date(a).getTime() - new Date(b).getTime()
   );
+
+  // Save to localStorage whenever state changes
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.CHILDREN, JSON.stringify(children));
+  }, [children]);
+  
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.ATTENDANCE, JSON.stringify(attendance));
+  }, [attendance]);
+  
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.SUMMARIES, JSON.stringify(summaries));
+  }, [summaries]);
+  
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.CURRENT_SUNDAY, currentSunday);
+  }, [currentSunday]);
 
   // Child operations
   const addChild = (childData: Omit<Child, "id" | "createdAt" | "updatedAt">) => {
     const now = new Date().toISOString();
     const newChild: Child = {
       ...childData,
-      id: `child-${children.length + 1}`,
+      id: `child-${Date.now()}`, // Using timestamp for more unique IDs
       createdAt: now,
       updatedAt: now,
     };
@@ -145,7 +188,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children:
     
     const now = new Date().toISOString();
     const newAttendance: Attendance = {
-      id: `att-${currentSunday}-${childId}-${program}`,
+      id: `att-${currentSunday}-${childId}-${program}-${Date.now()}`, // Added timestamp for uniqueness
       childId,
       childName: child.fullName,
       ageGroup: child.ageGroup,
