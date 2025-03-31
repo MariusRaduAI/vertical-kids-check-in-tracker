@@ -1,4 +1,3 @@
-
 import React from "react";
 import PageHeader from "@/components/common/PageHeader";
 import {
@@ -16,7 +15,7 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
-import { BookOpen, Tag, HelpCircle, LightBulb, School } from "lucide-react";
+import { BookOpen, Tag, HelpCircle, Lightbulb, School } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const Training: React.FC = () => {
@@ -38,7 +37,7 @@ const Training: React.FC = () => {
             <span>Utilizare Generală</span>
           </TabsTrigger>
           <TabsTrigger value="tips" className="flex items-center gap-2">
-            <LightBulb className="h-4 w-4" />
+            <Lightbulb className="h-4 w-4" />
             <span>Sfaturi & Trucuri</span>
           </TabsTrigger>
         </TabsList>
