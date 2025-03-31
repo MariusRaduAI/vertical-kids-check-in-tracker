@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import PageHeader from "@/components/common/PageHeader";
 import { Button } from "@/components/ui/button";
 import {
@@ -40,12 +40,36 @@ const SettingsPage: React.FC = () => {
     printFormat: "pdf",
   });
   
-  const [users, setUsers] = useState<User[]>(mockUsers);
+  const [users, setUsers] = useState<User[]>([]);
   const [newUser, setNewUser] = useState({
     name: "",
     email: "",
     role: "Voluntar",
   });
+  
+  const [isSaving, setSaving] = useState(false);
+  const [lastSaved, setLastSaved] = useState<string | null>(null);
+  
+  // Load saved settings from localStorage on mount
+  useEffect(() => {
+    const savedSettings = localStorage.getItem('appSettings');
+    if (savedSettings) {
+      setAppSettings(JSON.parse(savedSettings));
+    }
+    
+    const savedUsers = localStorage.getItem('users');
+    if (savedUsers) {
+      setUsers(JSON.parse(savedUsers));
+    } else {
+      // If no users exist in localStorage, use mockUsers as fallback
+      setUsers(mockUsers);
+    }
+    
+    const lastSavedTime = localStorage.getItem('lastSaved');
+    if (lastSavedTime) {
+      setLastSaved(lastSavedTime);
+    }
+  }, []);
   
   // Handle settings change
   const handleSettingChange = (
@@ -68,10 +92,24 @@ const SettingsPage: React.FC = () => {
   
   // Handle saving settings
   const handleSaveSettings = () => {
-    toast({
-      title: "Setări salvate",
-      description: "Setările au fost actualizate cu succes."
-    });
+    setSaving(true);
+    
+    // Simulate a network request with setTimeout
+    setTimeout(() => {
+      // Save to localStorage
+      localStorage.setItem('appSettings', JSON.stringify(appSettings));
+      
+      const now = new Date().toLocaleString();
+      localStorage.setItem('lastSaved', now);
+      setLastSaved(now);
+      
+      setSaving(false);
+      
+      toast({
+        title: "Setări salvate",
+        description: "Setările au fost actualizate cu succes."
+      });
+    }, 800);
   };
   
   // Handle new user input
@@ -104,7 +142,12 @@ const SettingsPage: React.FC = () => {
       createdAt: new Date().toISOString().split("T")[0]
     };
     
-    setUsers(prev => [...prev, newUserEntry]);
+    const updatedUsers = [...users, newUserEntry];
+    setUsers(updatedUsers);
+    
+    // Save updated users to localStorage
+    localStorage.setItem('users', JSON.stringify(updatedUsers));
+    
     setNewUser({
       name: "",
       email: "",
@@ -119,12 +162,94 @@ const SettingsPage: React.FC = () => {
   
   // Handle deleting user
   const handleDeleteUser = (userId: string) => {
-    setUsers(prev => prev.filter(user => user.id !== userId));
+    const updatedUsers = users.filter(user => user.id !== userId);
+    setUsers(updatedUsers);
+    
+    // Save updated users to localStorage
+    localStorage.setItem('users', JSON.stringify(updatedUsers));
     
     toast({
       title: "Utilizator șters",
       description: "Utilizatorul a fost eliminat cu succes."
     });
+  };
+  
+  // Handle backup creation
+  const handleCreateBackup = () => {
+    // Create backup object
+    const backupData = {
+      appSettings,
+      users,
+      exportDate: new Date().toISOString(),
+      version: "1.0"
+    };
+    
+    // Convert to JSON string
+    const backupString = JSON.stringify(backupData, null, 2);
+    
+    // Create a blob
+    const blob = new Blob([backupString], { type: 'application/json' });
+    
+    // Create download link
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const date = new Date().toISOString().split('T')[0];
+    a.href = url;
+    a.download = `scoala-duminicala-backup-${date}.json`;
+    document.body.appendChild(a);
+    a.click();
+    
+    // Clean up
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    toast({
+      title: "Backup creat",
+      description: "Datele au fost salvate într-un fișier JSON."
+    });
+  };
+  
+  // Handle file import
+  const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+    
+    reader.onload = (event) => {
+      try {
+        const importedData = JSON.parse(event.target?.result as string);
+        
+        // Validate imported data structure
+        if (importedData.appSettings && importedData.users) {
+          // Update app settings
+          setAppSettings(importedData.appSettings);
+          localStorage.setItem('appSettings', JSON.stringify(importedData.appSettings));
+          
+          // Update users
+          setUsers(importedData.users);
+          localStorage.setItem('users', JSON.stringify(importedData.users));
+          
+          toast({
+            title: "Import reușit",
+            description: "Datele au fost importate cu succes."
+          });
+        } else {
+          throw new Error("Format de date invalid");
+        }
+      } catch (error) {
+        toast({
+          title: "Eroare la import",
+          description: "Fișierul nu conține date valide.",
+          variant: "destructive"
+        });
+      }
+    };
+    
+    reader.readAsText(file);
+    
+    // Reset input value to allow reimporting the same file
+    e.target.value = '';
   };
 
   return (
@@ -147,6 +272,11 @@ const SettingsPage: React.FC = () => {
               <CardTitle>Setări Generale</CardTitle>
               <CardDescription>
                 Configurează setările generale ale aplicației
+                {lastSaved && (
+                  <div className="text-xs text-muted-foreground mt-1">
+                    Ultima salvare: {lastSaved}
+                  </div>
+                )}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -231,7 +361,9 @@ const SettingsPage: React.FC = () => {
               </div>
             </CardContent>
             <CardFooter>
-              <Button onClick={handleSaveSettings}>Salvează Setările</Button>
+              <Button onClick={handleSaveSettings} disabled={isSaving}>
+                {isSaving ? "Se salvează..." : "Salvează Setările"}
+              </Button>
             </CardFooter>
           </Card>
         </TabsContent>
@@ -343,7 +475,7 @@ const SettingsPage: React.FC = () => {
                 <p className="text-muted-foreground">
                   Creează o copie de rezervă a tuturor datelor aplicației
                 </p>
-                <Button>Creează Backup</Button>
+                <Button onClick={handleCreateBackup}>Creează Backup</Button>
               </div>
               
               <div className="space-y-4 border-t pt-4">
@@ -361,10 +493,14 @@ const SettingsPage: React.FC = () => {
               <div className="space-y-4 border-t pt-4">
                 <h3 className="text-lg font-medium">Import Date</h3>
                 <p className="text-muted-foreground">
-                  Importă date din CSV (doar format compatibil)
+                  Importă date din JSON (doar format compatibil)
                 </p>
                 <div className="flex items-center gap-4">
-                  <Input type="file" />
+                  <Input 
+                    type="file" 
+                    accept=".json"
+                    onChange={handleImport}
+                  />
                   <Button variant="outline">Import</Button>
                 </div>
               </div>
