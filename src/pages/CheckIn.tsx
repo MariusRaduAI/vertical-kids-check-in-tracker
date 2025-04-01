@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useApp } from "@/context/AppContext";
 import PageHeader from "@/components/common/PageHeader";
@@ -24,8 +23,9 @@ import {
 import { format } from "date-fns";
 import AgeGroupBadge from "@/components/common/AgeGroupBadge";
 import CategoryBadge from "@/components/common/CategoryBadge";
+import NewChildBadge from "@/components/common/NewChildBadge";
 import { Child, AgeGroup } from "@/types/models";
-import { Search, AlertTriangle, Tag, Printer, CheckCircle } from "lucide-react";
+import { Search, AlertTriangle, Tag, Printer, BadgePlus } from "lucide-react";
 import { 
   Dialog, 
   DialogContent, 
@@ -64,7 +64,6 @@ const CheckIn: React.FC = () => {
     ageGroup: "4-6" as AgeGroup,
   });
   
-  // Replace the three medical check items with a single comprehensive check
   const [medicalCheckComplete, setMedicalCheckComplete] = useState(false);
 
   const [tagOpen, setTagOpen] = useState(false);
@@ -77,11 +76,9 @@ const CheckIn: React.FC = () => {
     date: string;
   } | null>(null);
 
-  // Get today's attendance stats
   const todayStats = getTotalPresentToday();
   const todaySummary = getAttendanceSummaryForDate(currentSunday);
 
-  // Handle search input change
   useEffect(() => {
     if (searchQuery.length > 2) {
       const results = searchChildren(searchQuery);
@@ -91,7 +88,6 @@ const CheckIn: React.FC = () => {
     }
   }, [searchQuery, searchChildren]);
 
-  // Handle selecting a child from search results
   const handleSelectChild = (child: Child) => {
     setSelectedChild(child);
     setSearchQuery(child.fullName);
@@ -99,12 +95,10 @@ const CheckIn: React.FC = () => {
     setIsNewChild(false);
   };
 
-  // Handle marking as new child
   const handleNewChildClick = () => {
     setIsNewChild(true);
     setSelectedChild(null);
     
-    // Pre-fill first/last name from search if possible
     const nameParts = searchQuery.split(" ");
     if (nameParts.length >= 2) {
       setNewChildData({
@@ -121,7 +115,6 @@ const CheckIn: React.FC = () => {
     }
   };
 
-  // Handle creating a new child
   const handleCreateNewChild = () => {
     if (!newChildData.firstName || !newChildData.lastName) {
       toast({
@@ -135,7 +128,7 @@ const CheckIn: React.FC = () => {
     const fullName = `${newChildData.firstName} ${newChildData.lastName}`;
     
     const birthDate = new Date();
-    birthDate.setFullYear(birthDate.getFullYear() - 5); // Default age of 5 years
+    birthDate.setFullYear(birthDate.getFullYear() - 5);
     
     const newChild = addChild({
       firstName: newChildData.firstName,
@@ -154,11 +147,9 @@ const CheckIn: React.FC = () => {
     setIsNewChild(false);
   };
 
-  // Handle check-in
   const handleCheckIn = () => {
     if (!selectedChild) return;
 
-    // Check if medical check is completed
     if (!medicalCheckComplete) {
       toast({
         title: "Verificare medicală necesară",
@@ -168,7 +159,6 @@ const CheckIn: React.FC = () => {
       return;
     }
 
-    // Use the same structure for backward compatibility with the AppContext
     const medicalCheckData = {
       temperature: true,
       noSymptoms: true,
@@ -193,7 +183,6 @@ const CheckIn: React.FC = () => {
     }
   };
 
-  // Handle printing tags
   const handlePrintTags = () => {
     toast({
       title: "Etichete trimise la imprimantă",
@@ -201,13 +190,11 @@ const CheckIn: React.FC = () => {
     });
     setTagOpen(false);
     
-    // Reset form for next check-in
     setSelectedChild(null);
     setSearchQuery("");
     setMedicalCheckComplete(false);
   };
 
-  // Reset everything
   const handleReset = () => {
     setSelectedChild(null);
     setSearchQuery("");
@@ -215,7 +202,6 @@ const CheckIn: React.FC = () => {
     setMedicalCheckComplete(false);
   };
 
-  // Render tag preview component
   const TagPreview = ({ tag }: { tag: typeof generatedTag }) => {
     if (!tag) return null;
     
@@ -242,11 +228,9 @@ const CheckIn: React.FC = () => {
     );
   };
 
-  // Live tag preview popover
   const LiveTagPreview = () => {
     if (!selectedChild) return null;
     
-    // Generate a preview tag object for display
     const previewTag = {
       childName: selectedChild.fullName,
       uniqueCode: `${selectedChild.firstName.charAt(0)}${selectedChild.lastName.charAt(0)}--${program}`,
@@ -319,6 +303,7 @@ const CheckIn: React.FC = () => {
                             <div className="flex items-center gap-2 mt-1">
                               <AgeGroupBadge ageGroup={child.ageGroup} />
                               <CategoryBadge category={child.category} />
+                              {child.isNew && <NewChildBadge />}
                             </div>
                           </div>
                         </li>
@@ -419,6 +404,7 @@ const CheckIn: React.FC = () => {
                     <div className="flex items-center gap-2">
                       <AgeGroupBadge ageGroup={selectedChild.ageGroup} />
                       <CategoryBadge category={selectedChild.category} />
+                      {selectedChild.isNew && <NewChildBadge />}
                     </div>
                   </div>
 
@@ -438,7 +424,6 @@ const CheckIn: React.FC = () => {
                     </Select>
                   </div>
 
-                  {/* Replace the three checkboxes with a single medical check checkbox */}
                   <div className="space-y-2">
                     <h4 className="font-medium">Verificare medicală</h4>
                     <div className="flex items-start space-x-2 p-4 rounded-md border border-gray-200 bg-gray-50">
@@ -460,7 +445,6 @@ const CheckIn: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Add live tag preview button */}
                   <div className="flex justify-end">
                     <LiveTagPreview />
                   </div>
@@ -506,6 +490,20 @@ const CheckIn: React.FC = () => {
                 </div>
               </div>
 
+              <Card className="bg-yellow-50 border-yellow-200">
+                <CardContent className="p-4 flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium flex items-center gap-1">
+                      <BadgePlus className="h-4 w-4" /> Copii Noi
+                    </p>
+                    <p className="text-2xl font-bold">{todayStats.newChildren}</p>
+                  </div>
+                  <div className="text-sm text-muted-foreground">
+                    Prima prezență
+                  </div>
+                </CardContent>
+              </Card>
+
               <div className="space-y-2">
                 <h4 className="text-sm font-medium text-muted-foreground">Pe grupe de vârstă</h4>
                 <div className="space-y-2">
@@ -542,7 +540,6 @@ const CheckIn: React.FC = () => {
         </div>
       </div>
 
-      {/* Tag Generation Dialog with enhanced preview */}
       <Dialog open={tagOpen} onOpenChange={setTagOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>

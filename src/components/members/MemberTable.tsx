@@ -1,113 +1,78 @@
 
 import React from "react";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { formatDistanceToNow, parseISO, isBefore, subDays } from "date-fns";
 import { Child } from "@/types/models";
-import { Button } from "@/components/ui/button";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { format, parseISO } from "date-fns";
 import AgeGroupBadge from "@/components/common/AgeGroupBadge";
 import CategoryBadge from "@/components/common/CategoryBadge";
-import { AlertTriangle, Edit } from "lucide-react";
+import NewChildBadge from "@/components/common/NewChildBadge";
+import { Button } from "@/components/ui/button";
+import { Edit } from "lucide-react";
 
 interface MemberTableProps {
   filteredChildren: Child[];
   onEditClick: (child: Child) => void;
 }
 
-const MemberTable: React.FC<MemberTableProps> = ({ 
-  filteredChildren, 
-  onEditClick 
-}) => {
+const MemberTable: React.FC<MemberTableProps> = ({ filteredChildren, onEditClick }) => {
+  // Helper function to check if a date is less than 30 days old
+  const isNew = (date?: string) => {
+    if (!date) return false;
+    const thirtyDaysAgo = subDays(new Date(), 30);
+    return isBefore(thirtyDaysAgo, parseISO(date));
+  };
+  
   return (
-    <div className="overflow-x-auto">
-      <Table>
+    <div className="rounded-md border overflow-hidden">
+      <Table className="w-full">
         <TableHeader>
           <TableRow>
-            <TableHead>Nume Complet</TableHead>
-            <TableHead>Data Nașterii</TableHead>
-            <TableHead>Vârstă</TableHead>
+            <TableHead>Nume</TableHead>
             <TableHead>Grupa</TableHead>
-            <TableHead>Categorie</TableHead>
-            <TableHead>Părinți</TableHead>
-            <TableHead>Contact</TableHead>
-            <TableHead>Alergii</TableHead>
-            <TableHead>Nevoi Speciale</TableHead>
+            <TableHead className="hidden md:table-cell">Părinți</TableHead>
+            <TableHead className="hidden md:table-cell">Adăugat</TableHead>
             <TableHead className="text-right">Acțiuni</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {filteredChildren.map(child => (
-            <TableRow key={child.id}>
-              <TableCell className="font-medium">{child.fullName}</TableCell>
-              <TableCell>{format(parseISO(child.birthDate), "dd.MM.yyyy")}</TableCell>
-              <TableCell>
-                <div>
-                  {child.age} ani
-                  {child.daysUntilBirthday === 0 ? (
-                    <span className="block text-xs text-primary font-medium">
-                      Astăzi e ziua lui!
-                    </span>
-                  ) : (
-                    <span className="block text-xs text-muted-foreground">
-                      {child.daysUntilBirthday} zile până la zi
-                    </span>
-                  )}
-                </div>
-              </TableCell>
-              <TableCell>
-                <AgeGroupBadge ageGroup={child.ageGroup} />
-              </TableCell>
-              <TableCell>
-                <CategoryBadge category={child.category} />
-              </TableCell>
-              <TableCell>
-                <div className="max-w-[200px]">
-                  {child.parents.map((parent, index) => (
-                    <div key={index} className="text-sm">
-                      {parent}
-                    </div>
-                  ))}
-                </div>
-              </TableCell>
-              <TableCell>
-                <div className="text-sm">
-                  {child.phone && <div>{child.phone}</div>}
-                  {child.email && <div className="text-xs text-muted-foreground">{child.email}</div>}
-                </div>
-              </TableCell>
-              <TableCell>
-                {child.hasAllergies ? (
-                  <div className="flex items-start">
-                    <AlertTriangle className="h-4 w-4 text-yellow-500 mr-1 mt-0.5 flex-shrink-0" />
-                    <span className="text-xs">{child.allergiesDetails}</span>
-                  </div>
-                ) : (
-                  <span className="text-xs text-muted-foreground">Nu</span>
-                )}
-              </TableCell>
-              <TableCell>
-                {child.hasSpecialNeeds ? (
-                  <div className="flex items-start">
-                    <AlertTriangle className="h-4 w-4 text-blue-500 mr-1 mt-0.5 flex-shrink-0" />
-                    <span className="text-xs">{child.specialNeedsDetails}</span>
-                  </div>
-                ) : (
-                  <span className="text-xs text-muted-foreground">Nu</span>
-                )}
-              </TableCell>
-              <TableCell className="text-right">
-                <Button variant="ghost" size="sm" onClick={() => onEditClick(child)}>
-                  <Edit className="h-4 w-4" />
-                </Button>
+          {filteredChildren.length === 0 ? (
+            <TableRow>
+              <TableCell colSpan={5} className="text-center p-6 text-muted-foreground">
+                Niciun copil găsit
               </TableCell>
             </TableRow>
-          ))}
+          ) : (
+            filteredChildren.map((child) => (
+              <TableRow key={child.id}>
+                <TableCell>
+                  <div className="font-medium">{child.fullName}</div>
+                  <div className="flex items-center space-x-1 mt-1">
+                    <CategoryBadge category={child.category} />
+                    {isNew(child.firstAttendanceDate) && <NewChildBadge />}
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <AgeGroupBadge ageGroup={child.ageGroup} />
+                </TableCell>
+                <TableCell className="hidden md:table-cell">
+                  {child.parents.join(", ")}
+                </TableCell>
+                <TableCell className="hidden md:table-cell text-sm text-muted-foreground">
+                  {formatDistanceToNow(parseISO(child.createdAt), { addSuffix: true })}
+                </TableCell>
+                <TableCell className="text-right">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => onEditClick(child)}
+                  >
+                    <Edit className="h-4 w-4 mr-1" />
+                    Editează
+                  </Button>
+                </TableCell>
+              </TableRow>
+            ))
+          )}
         </TableBody>
       </Table>
     </div>

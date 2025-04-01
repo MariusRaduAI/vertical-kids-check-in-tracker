@@ -1,19 +1,21 @@
 
-import React from "react";
+import React, { ReactNode } from "react";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 
 interface StatsCardProps {
   title: string;
   value: number | string;
-  description?: React.ReactNode;
+  description?: ReactNode;
   className?: string;
+  icon?: ReactNode;
 }
 
-const StatsCard: React.FC<StatsCardProps> = ({ title, value, description, className }) => {
+const StatsCard: React.FC<StatsCardProps> = ({ title, value, description, className, icon }) => {
   return (
     <Card className={className}>
       <CardHeader className="pb-2">
-        <CardTitle className="text-sm font-medium text-muted-foreground">
+        <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+          {icon && <span>{icon}</span>}
           {title}
         </CardTitle>
       </CardHeader>

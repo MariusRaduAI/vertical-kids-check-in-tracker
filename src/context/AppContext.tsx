@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { Child, Attendance, AttendanceSummary } from "../types/models";
 import { 
@@ -33,7 +32,8 @@ interface AppContextType {
   getAttendanceSummaryForDate: (date: string) => AttendanceSummary | undefined;
   
   // Statistics
-  getTotalPresentToday: () => { totalP1: number; totalP2: number; total: number };
+  getTotalPresentToday: () => { totalP1: number; totalP2: number; total: number; newChildren: number };
+  getNewChildren: (date?: string) => Child[];
   
   // Added for the attendance page
   sundays: string[];
@@ -183,6 +183,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children:
       (a) => a.date === currentSunday && a.program === program && a.status === 'P'
     );
     
+    // Check if this is the child's first attendance ever
+    const childPastAttendance = attendance.filter(
+      (a) => a.childId === childId && a.status === 'P'
+    );
+    
+    const isFirstAttendance = childPastAttendance.length === 0;
+    
+    // If it's the first attendance, update the child's record
+    if (isFirstAttendance) {
+      updateChild(childId, { 
+        isNew: true, 
+        firstAttendanceDate: currentSunday 
+      });
+    }
+    
     const order = todaysAttendance.length + 1;
     const uniqueCode = generateUniqueCode(child, program, order);
     
@@ -200,6 +215,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children:
       checkedBy: "Current User", // Would be replaced with actual user in a real app
       medicalCheck,
       checkedInAt: now,
+      isFirstAttendance
     };
     
     setAttendance((prev) => {
@@ -211,7 +227,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children:
     });
     
     // Update summaries
-    updateSummaryAfterCheckIn(child, program);
+    updateSummaryAfterCheckIn(child, program, isFirstAttendance);
     
     toast({
       title: "Check-in reușit",
@@ -221,13 +237,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children:
     return newAttendance;
   };
   
-  const updateSummaryAfterCheckIn = (child: Child, program: "P1" | "P2") => {
+  const updateSummaryAfterCheckIn = (child: Child, program: "P1" | "P2", isFirstAttendance: boolean) => {
     setSummaries((prev) => {
       const currentSummary = prev[currentSunday] || {
         date: currentSunday,
         totalP1: 0,
         totalP2: 0,
         total: 0,
+        newChildrenCount: 0,
         byAgeGroup: {
           "0-1": { P1: 0, P2: 0, total: 0 },
           "1-2": { P1: 0, P2: 0, total: 0 },
@@ -263,13 +280,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children:
         newSummary.byCategory.Guest += 1;
       }
       
+      // Increment new children count if it's the first attendance
+      if (isFirstAttendance) {
+        newSummary.newChildrenCount = (newSummary.newChildrenCount || 0) + 1;
+      }
+      
       return {
         ...prev,
         [currentSunday]: newSummary,
       };
     });
   };
-  
+
   const getAttendanceForDate = (date: string) => {
     return attendance.filter((a) => a.date === date);
   };
@@ -285,13 +307,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children:
   const getTotalPresentToday = () => {
     const todaySummary = summaries[currentSunday];
     if (!todaySummary) {
-      return { totalP1: 0, totalP2: 0, total: 0 };
+      return { totalP1: 0, totalP2: 0, total: 0, newChildren: 0 };
     }
     return {
       totalP1: todaySummary.totalP1,
       totalP2: todaySummary.totalP2,
       total: todaySummary.total,
+      newChildren: todaySummary.newChildrenCount || 0
     };
+  };
+  
+  const getNewChildren = (date?: string) => {
+    const targetDate = date || currentSunday;
+    return children.filter(child => 
+      child.isNew && child.firstAttendanceDate === targetDate
+    );
   };
   
   const value = {
@@ -315,6 +345,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children:
     
     // Statistics
     getTotalPresentToday,
+    getNewChildren,
   };
   
   return <AppContext.Provider value={value}>{reactChildren}</AppContext.Provider>;

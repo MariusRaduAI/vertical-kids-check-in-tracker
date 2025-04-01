@@ -1,4 +1,3 @@
-
 export interface Child {
   id: string;
   firstName: string;
@@ -18,6 +17,8 @@ export interface Child {
   allergiesDetails?: string;
   hasSpecialNeeds?: boolean;
   specialNeedsDetails?: string;
+  isNew?: boolean;
+  firstAttendanceDate?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -41,6 +42,7 @@ export interface Attendance {
     goodCondition: boolean;
   };
   checkedInAt: string;
+  isFirstAttendance?: boolean;
 }
 
 export interface User {
@@ -56,6 +58,7 @@ export interface AttendanceSummary {
   totalP1: number;
   totalP2: number;
   total: number;
+  newChildrenCount: number;
   byAgeGroup: Record<AgeGroup, {
     P1: number;
     P2: number;

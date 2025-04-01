@@ -1,10 +1,9 @@
-
 import React, { useState } from "react";
 import { useApp } from "@/context/AppContext";
 import PageHeader from "@/components/common/PageHeader";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { BarChart3, LineChart, PieChart, Users } from "lucide-react";
+import { BarChart3, LineChart, PieChart, Users, BadgePlus } from "lucide-react";
 
 // Import refactored components
 import PeriodSelector from "@/components/dashboard/PeriodSelector";
@@ -98,7 +97,7 @@ const Dashboard: React.FC = () => {
         </TabsList>
         
         <TabsContent value="overview" className="animate-fade-in">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
             <StatsCard
               title={`Total Copii ${period === "current" ? "Astăzi" : "în Perioada Selectată"}`}
               value={averageAttendance.reduce((sum, item) => sum + item.total, 0)}
@@ -109,6 +108,15 @@ const Dashboard: React.FC = () => {
                   <span>Program 2: {averageAttendance.reduce((sum, item) => sum + item.P2, 0)}</span>
                 </div>
               }
+              icon={<Users className="h-4 w-4" />}
+            />
+            
+            <StatsCard
+              title="Copii Noi"
+              value={todayStats.newChildren}
+              description="Copii prezenți pentru prima dată"
+              icon={<BadgePlus className="h-4 w-4" />}
+              className="bg-yellow-50"
             />
             
             <Card>
@@ -133,6 +141,7 @@ const Dashboard: React.FC = () => {
               title="Total Membri Înregistrați"
               value={children.filter(c => c.category === "Membru").length}
               description={`Din total de ${children.length} copii`}
+              icon={<Users className="h-4 w-4" />}
             />
           </div>
           
