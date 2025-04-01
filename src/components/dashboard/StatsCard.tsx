@@ -12,15 +12,15 @@ interface StatsCardProps {
 
 const StatsCard: React.FC<StatsCardProps> = ({ title, value, description, className, icon }) => {
   return (
-    <Card className={className}>
+    <Card className={`border bg-white shadow-sm hover:shadow-md transition-shadow ${className}`}>
       <CardHeader className="pb-2">
         <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-          {icon && <span>{icon}</span>}
+          {icon && <span className="text-brand-primary">{icon}</span>}
           {title}
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="text-3xl font-bold">{value}</div>
+        <div className="text-3xl font-bold text-brand-dark">{value}</div>
         {description && (
           <div className="text-xs text-muted-foreground mt-2">{description}</div>
         )}

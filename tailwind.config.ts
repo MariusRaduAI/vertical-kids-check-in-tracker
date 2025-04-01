@@ -19,6 +19,9 @@ export default {
 			}
 		},
 		extend: {
+			fontFamily: {
+				sans: ['Montserrat', 'sans-serif'],
+			},
 			colors: {
 				border: 'hsl(var(--border))',
 				input: 'hsl(var(--input))',
@@ -70,6 +73,12 @@ export default {
 					"preschool": "#c8e6c9", // 2-3 years: Light green
 					"primary": "#bbdefb",   // 4-6 years: Light blue
 					"junior": "#d1c4e9",    // 7-12 years: Light purple
+				},
+				// Brand colors
+				brand: {
+					primary: "#8dc63f",
+					light: "#f1f1f1",
+					dark: "#2a2c32",
 				}
 			},
 			borderRadius: {
