@@ -82,9 +82,13 @@ const AppSidebar: React.FC = () => {
   return (
     <Sidebar className="border-r pt-0">
       <SidebarHeader className="h-16 flex items-center px-6">
-        <div className="flex items-center gap-2">
-          <Clipboard className="h-6 w-6 text-primary" />
-          <span className="font-bold text-lg">Vertical Kids Check-In Tracker</span>
+        <div className="flex flex-col items-center w-full">
+          <img 
+            src="/lovable-uploads/41d4c4ca-017a-4fe0-a4d3-cfc69e2998cc.png" 
+            alt="Vertical Kids Logo" 
+            className="h-8" 
+          />
+          <span className="text-sm font-medium">Check-In Tracker</span>
         </div>
         <SidebarTrigger className="ml-auto lg:hidden" />
       </SidebarHeader>
