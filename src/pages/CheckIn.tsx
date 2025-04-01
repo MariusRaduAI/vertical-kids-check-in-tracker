@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useApp } from "@/context/AppContext";
 import PageHeader from "@/components/common/PageHeader";
@@ -40,6 +41,7 @@ import {
   PopoverContent, 
   PopoverTrigger 
 } from "@/components/ui/popover";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 const CheckIn: React.FC = () => {
   const {
@@ -56,7 +58,9 @@ const CheckIn: React.FC = () => {
   const [searchResults, setSearchResults] = useState<Child[]>([]);
   const [selectedChild, setSelectedChild] = useState<Child | null>(null);
   const [isNewChild, setIsNewChild] = useState(false);
-  const [program, setProgram] = useState<"P1" | "P2">("P1");
+  
+  // Change from a single program to a program selection type
+  const [programSelection, setProgramSelection] = useState<"P1" | "P2" | "Both">("P1");
   
   const [newChildData, setNewChildData] = useState({
     firstName: "",
@@ -68,13 +72,15 @@ const CheckIn: React.FC = () => {
 
   const [tagOpen, setTagOpen] = useState(false);
   const [tagCount, setTagCount] = useState(3);
-  const [generatedTag, setGeneratedTag] = useState<{
+  
+  // Update the generated tag type to handle both programs
+  const [generatedTags, setGeneratedTags] = useState<Array<{
     childName: string;
     uniqueCode: string;
     ageGroup: AgeGroup;
     program: "P1" | "P2";
     date: string;
-  } | null>(null);
+  }> | null>(null);
 
   const todayStats = getTotalPresentToday();
   const todaySummary = getAttendanceSummaryForDate(currentSunday);
@@ -165,28 +171,59 @@ const CheckIn: React.FC = () => {
       goodCondition: true
     };
 
-    const attendanceRecord = checkInChild(
-      selectedChild.id,
-      program,
-      medicalCheckData
-    );
+    const tags = [];
 
-    if (attendanceRecord) {
-      setGeneratedTag({
-        childName: selectedChild.fullName,
-        uniqueCode: attendanceRecord.uniqueCode || "",
-        ageGroup: selectedChild.ageGroup,
-        program,
-        date: format(new Date(currentSunday), "dd.MM.yyyy"),
-      });
+    // Check-in for Program 1 if selected "P1" or "Both"
+    if (programSelection === "P1" || programSelection === "Both") {
+      const attendanceP1 = checkInChild(
+        selectedChild.id,
+        "P1",
+        medicalCheckData
+      );
+
+      if (attendanceP1) {
+        tags.push({
+          childName: selectedChild.fullName,
+          uniqueCode: attendanceP1.uniqueCode || "",
+          ageGroup: selectedChild.ageGroup,
+          program: "P1" as "P1" | "P2",
+          date: format(new Date(currentSunday), "dd.MM.yyyy"),
+        });
+      }
+    }
+
+    // Check-in for Program 2 if selected "P2" or "Both"
+    if (programSelection === "P2" || programSelection === "Both") {
+      const attendanceP2 = checkInChild(
+        selectedChild.id,
+        "P2",
+        medicalCheckData
+      );
+
+      if (attendanceP2) {
+        tags.push({
+          childName: selectedChild.fullName,
+          uniqueCode: attendanceP2.uniqueCode || "",
+          ageGroup: selectedChild.ageGroup,
+          program: "P2" as "P1" | "P2",
+          date: format(new Date(currentSunday), "dd.MM.yyyy"),
+        });
+      }
+    }
+
+    if (tags.length > 0) {
+      setGeneratedTags(tags);
       setTagOpen(true);
     }
   };
 
   const handlePrintTags = () => {
+    const programInfo = programSelection === "Both" ? "ambele programe" : 
+                        programSelection === "P1" ? "programul 1" : "programul 2";
+    
     toast({
       title: "Etichete trimise la imprimantă",
-      description: `${tagCount} etichete pentru ${selectedChild?.fullName} au fost trimise la imprimantă.`,
+      description: `${tagCount * generatedTags!.length} etichete pentru ${selectedChild?.fullName} (${programInfo}) au fost trimise la imprimantă.`,
     });
     setTagOpen(false);
     
@@ -200,9 +237,10 @@ const CheckIn: React.FC = () => {
     setSearchQuery("");
     setIsNewChild(false);
     setMedicalCheckComplete(false);
+    setProgramSelection("P1");
   };
 
-  const TagPreview = ({ tag }: { tag: typeof generatedTag }) => {
+  const TagPreview = ({ tag }: { tag: typeof generatedTags extends Array<infer T> ? T : never }) => {
     if (!tag) return null;
     
     return (
@@ -231,13 +269,28 @@ const CheckIn: React.FC = () => {
   const LiveTagPreview = () => {
     if (!selectedChild) return null;
     
-    const previewTag = {
-      childName: selectedChild.fullName,
-      uniqueCode: `${selectedChild.firstName.charAt(0)}${selectedChild.lastName.charAt(0)}--${program}`,
-      ageGroup: selectedChild.ageGroup,
-      program,
-      date: format(new Date(currentSunday), "dd.MM.yyyy"),
-    };
+    // Create a preview tag depending on the selected program(s)
+    const previewTags = [];
+    
+    if (programSelection === "P1" || programSelection === "Both") {
+      previewTags.push({
+        childName: selectedChild.fullName,
+        uniqueCode: `${selectedChild.firstName.charAt(0)}${selectedChild.lastName.charAt(0)}--P1`,
+        ageGroup: selectedChild.ageGroup,
+        program: "P1" as "P1" | "P2",
+        date: format(new Date(currentSunday), "dd.MM.yyyy"),
+      });
+    }
+    
+    if (programSelection === "P2" || programSelection === "Both") {
+      previewTags.push({
+        childName: selectedChild.fullName,
+        uniqueCode: `${selectedChild.firstName.charAt(0)}${selectedChild.lastName.charAt(0)}--P2`,
+        ageGroup: selectedChild.ageGroup,
+        program: "P2" as "P1" | "P2",
+        date: format(new Date(currentSunday), "dd.MM.yyyy"),
+      });
+    }
     
     return (
       <Popover>
@@ -247,10 +300,14 @@ const CheckIn: React.FC = () => {
             Previzualizare etichetă
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-80 p-0">
+        <PopoverContent className={`${previewTags.length > 1 ? 'w-auto' : 'w-80'} p-0`}>
           <div className="p-4">
             <h4 className="font-semibold mb-2">Previzualizare etichetă</h4>
-            <TagPreview tag={previewTag} />
+            <div className={`${previewTags.length > 1 ? 'grid grid-cols-2 gap-4' : ''}`}>
+              {previewTags.map((tag, index) => (
+                <TagPreview key={index} tag={tag} />
+              ))}
+            </div>
             <p className="text-xs text-muted-foreground mt-2">
               Aceasta este o previzualizare. Codul unic final va fi generat la check-in.
             </p>
@@ -408,20 +465,27 @@ const CheckIn: React.FC = () => {
                     </div>
                   </div>
 
+                  {/* Replace the Select with RadioGroup for program selection */}
                   <div className="space-y-2">
-                    <Label htmlFor="program">Program</Label>
-                    <Select
-                      value={program}
-                      onValueChange={(value) => setProgram(value as "P1" | "P2")}
+                    <Label htmlFor="program">Participare la Program</Label>
+                    <RadioGroup
+                      value={programSelection}
+                      onValueChange={(value) => setProgramSelection(value as "P1" | "P2" | "Both")}
+                      className="flex flex-col space-y-1"
                     >
-                      <SelectTrigger id="program">
-                        <SelectValue placeholder="Selectează programul" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="P1">Program 1</SelectItem>
-                        <SelectItem value="P2">Program 2</SelectItem>
-                      </SelectContent>
-                    </Select>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="P1" id="p1" />
+                        <Label htmlFor="p1">Doar Program 1</Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="P2" id="p2" />
+                        <Label htmlFor="p2">Doar Program 2</Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="Both" id="both" />
+                        <Label htmlFor="both">Ambele Programe</Label>
+                      </div>
+                    </RadioGroup>
                   </div>
 
                   <div className="space-y-2">
@@ -541,15 +605,21 @@ const CheckIn: React.FC = () => {
       </div>
 
       <Dialog open={tagOpen} onOpenChange={setTagOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className={`${generatedTags && generatedTags.length > 1 ? 'sm:max-w-xl' : 'sm:max-w-md'}`}>
           <DialogHeader>
             <DialogTitle>Etichetă Generată</DialogTitle>
             <DialogDescription>
-              Etichetă pentru {generatedTag?.childName}
+              Etichete pentru {selectedChild?.fullName}
             </DialogDescription>
           </DialogHeader>
           
-          {generatedTag && <TagPreview tag={generatedTag} />}
+          {generatedTags && (
+            <div className={`${generatedTags.length > 1 ? 'grid grid-cols-2 gap-4' : ''}`}>
+              {generatedTags.map((tag, index) => (
+                <TagPreview key={index} tag={tag} />
+              ))}
+            </div>
+          )}
           
           <div className="space-y-4">
             <div className="flex items-center space-x-2">
@@ -578,7 +648,7 @@ const CheckIn: React.FC = () => {
             </Button>
             <Button onClick={handlePrintTags}>
               <Printer className="mr-2 h-4 w-4" />
-              Printează {tagCount} etichete
+              Printează {tagCount * (generatedTags?.length || 1)} etichete
             </Button>
           </DialogFooter>
         </DialogContent>
