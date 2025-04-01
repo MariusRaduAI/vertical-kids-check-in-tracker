@@ -86,7 +86,7 @@ const AppSidebar: React.FC = () => {
           <img 
             src="/lovable-uploads/41d4c4ca-017a-4fe0-a4d3-cfc69e2998cc.png" 
             alt="Vertical Kids Logo" 
-            className="h-8" 
+            className="h-10" 
           />
           <span className="text-sm font-medium">Check-In Tracker</span>
         </div>

@@ -9,7 +9,7 @@ const Index = () => {
         <img 
           src="/lovable-uploads/41d4c4ca-017a-4fe0-a4d3-cfc69e2998cc.png" 
           alt="Vertical Kids Logo" 
-          className="h-16 mx-auto mb-6" 
+          className="h-24 mx-auto mb-6" 
         />
         <h1 className="text-4xl font-bold mb-4">Check-In Tracker</h1>
         <p className="text-xl text-gray-600 mb-8">
