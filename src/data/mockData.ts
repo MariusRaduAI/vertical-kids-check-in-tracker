@@ -225,11 +225,15 @@ export const generateAttendanceSummary = (attendance: Attendance[]): Record<stri
       byAgeGroup[record.ageGroup].total++;
     });
     
+    // Count new children (those with isFirstAttendance flag)
+    const newChildrenCount = records.filter(r => r.isFirstAttendance === true && r.status === 'P').length;
+    
     summary[date] = {
       date,
       totalP1: presentP1.length,
       totalP2: presentP2.length,
       total: presentP1.length + presentP2.length,
+      newChildrenCount,
       byAgeGroup,
       byCategory: {
         Membru: [...presentP1, ...presentP2].filter(r => r.category === 'Membru').length,
