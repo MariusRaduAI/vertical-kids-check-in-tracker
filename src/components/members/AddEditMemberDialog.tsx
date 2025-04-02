@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useState } from "react";
 import { Child, AgeGroup } from "@/types/models";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,6 +20,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useApp } from "@/context/AppContext";
+import { Badge } from "@/components/ui/badge";
+import { Users, X } from "lucide-react";
 
 interface AddEditMemberDialogProps {
   isOpen: boolean;
@@ -34,6 +37,8 @@ interface AddEditMemberDialogProps {
   onSave: () => void;
   onAgeGroupChange: (value: string) => void;
   onCategoryChange: (value: string) => void;
+  onAddSibling?: (siblingId: string) => void;
+  onRemoveSibling?: (siblingId: string) => void;
 }
 
 const AddEditMemberDialog: React.FC<AddEditMemberDialogProps> = ({
@@ -49,7 +54,24 @@ const AddEditMemberDialog: React.FC<AddEditMemberDialogProps> = ({
   onSave,
   onAgeGroupChange,
   onCategoryChange,
+  onAddSibling,
+  onRemoveSibling,
 }) => {
+  const { children, getSiblings } = useApp();
+  const [siblingSearch, setSiblingSearch] = useState("");
+  const [showSiblingSearch, setShowSiblingSearch] = useState(false);
+  
+  // Filter siblings that are not already added
+  const filteredSiblings = siblingSearch.trim() ? 
+    children.filter(c => 
+      c.id !== childFormData.id && 
+      !childFormData.siblingIds?.includes(c.id) &&
+      c.fullName.toLowerCase().includes(siblingSearch.toLowerCase())
+    ) : [];
+  
+  // Get current siblings
+  const currentSiblings = childFormData.id ? getSiblings(childFormData.id) : [];
+  
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[600px]">
@@ -134,6 +156,74 @@ const AddEditMemberDialog: React.FC<AddEditMemberDialogProps> = ({
               </SelectContent>
             </Select>
           </div>
+          
+          {/* Siblings Section */}
+          {isEditing && onAddSibling && onRemoveSibling && (
+            <div className="space-y-2 border p-4 rounded-md">
+              <div className="flex items-center justify-between">
+                <Label className="flex items-center gap-2">
+                  <Users className="h-4 w-4" /> Frați/Surori
+                </Label>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  type="button"
+                  onClick={() => setShowSiblingSearch(!showSiblingSearch)}
+                >
+                  {showSiblingSearch ? "Anulează" : "+ Adaugă"}
+                </Button>
+              </div>
+              
+              {currentSiblings.length > 0 && (
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {currentSiblings.map(sibling => (
+                    <Badge key={sibling.id} variant="secondary" className="flex items-center gap-1">
+                      {sibling.fullName}
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="h-4 w-4 p-0" 
+                        onClick={() => onRemoveSibling(sibling.id)}
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </Badge>
+                  ))}
+                </div>
+              )}
+              
+              {showSiblingSearch && (
+                <div className="mt-2 space-y-2">
+                  <Input
+                    placeholder="Caută un copil pentru a-l adăuga ca frate/soră..."
+                    value={siblingSearch}
+                    onChange={(e) => setSiblingSearch(e.target.value)}
+                  />
+                  
+                  {filteredSiblings.length > 0 && (
+                    <div className="max-h-32 overflow-y-auto border rounded-md divide-y">
+                      {filteredSiblings.map(child => (
+                        <div
+                          key={child.id}
+                          className="p-2 cursor-pointer hover:bg-muted"
+                          onClick={() => {
+                            onAddSibling(child.id);
+                            setSiblingSearch("");
+                          }}
+                        >
+                          {child.fullName}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  
+                  {siblingSearch && filteredSiblings.length === 0 && (
+                    <p className="text-sm text-muted-foreground">Nu a fost găsit niciun copil</p>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
           
           <div className="space-y-2">
             <div className="flex items-center justify-between">

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useApp } from "@/context/AppContext";
 import PageHeader from "@/components/common/PageHeader";
@@ -24,8 +25,9 @@ import { format } from "date-fns";
 import AgeGroupBadge from "@/components/common/AgeGroupBadge";
 import CategoryBadge from "@/components/common/CategoryBadge";
 import NewChildBadge from "@/components/common/NewChildBadge";
+import SiblingBadge from "@/components/common/SiblingBadge";
 import { Child, AgeGroup } from "@/types/models";
-import { Search, AlertTriangle, Tag, Printer, BadgePlus } from "lucide-react";
+import { Search, AlertTriangle, Tag, Printer, BadgePlus, Users } from "lucide-react";
 import { 
   Dialog, 
   DialogContent, 
@@ -43,6 +45,21 @@ import {
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import UpcomingSundayBirthdays from "@/components/checkin/UpcomingSundayBirthdays";
 
+interface ChildCheckInState {
+  childId: string;
+  selected: boolean;
+  program: "P1" | "P2" | "Both";
+  medicalCheckComplete: boolean;
+}
+
+interface TagData {
+  childName: string;
+  uniqueCode: string;
+  ageGroup: AgeGroup;
+  program: "P1" | "P2" | "Both";
+  date: string;
+}
+
 const CheckIn: React.FC = () => {
   const {
     searchChildren,
@@ -52,6 +69,7 @@ const CheckIn: React.FC = () => {
     getTotalPresentToday,
     getAttendanceSummaryForDate,
     children,
+    getSiblings,
   } = useApp();
   const { toast } = useToast();
 
@@ -60,7 +78,9 @@ const CheckIn: React.FC = () => {
   const [selectedChild, setSelectedChild] = useState<Child | null>(null);
   const [isNewChild, setIsNewChild] = useState(false);
   
-  const [programSelection, setProgramSelection] = useState<"P1" | "P2" | "Both">("P1");
+  // Multiple children check-in states
+  const [multiCheckInMode, setMultiCheckInMode] = useState(false);
+  const [childrenToCheckIn, setChildrenToCheckIn] = useState<ChildCheckInState[]>([]);
   
   const [newChildData, setNewChildData] = useState({
     firstName: "",
@@ -68,18 +88,10 @@ const CheckIn: React.FC = () => {
     ageGroup: "4-6" as AgeGroup,
   });
   
-  const [medicalCheckComplete, setMedicalCheckComplete] = useState(false);
-
   const [tagOpen, setTagOpen] = useState(false);
   const [tagCount, setTagCount] = useState(3);
   
-  const [generatedTags, setGeneratedTags] = useState<Array<{
-    childName: string;
-    uniqueCode: string;
-    ageGroup: AgeGroup;
-    program: "P1" | "P2";
-    date: string;
-  }> | null>(null);
+  const [generatedTags, setGeneratedTags] = useState<TagData[] | null>(null);
 
   const todayStats = getTotalPresentToday();
   const todaySummary = getAttendanceSummaryForDate(currentSunday);
@@ -94,7 +106,34 @@ const CheckIn: React.FC = () => {
   }, [searchQuery, searchChildren]);
 
   const handleSelectChild = (child: Child) => {
-    setSelectedChild(child);
+    const siblings = getSiblings(child.id);
+    
+    if (siblings.length > 0) {
+      // Initialize multi-check-in mode with this child and siblings
+      setMultiCheckInMode(true);
+      
+      const initialChildrenState: ChildCheckInState[] = [
+        {
+          childId: child.id,
+          selected: true,
+          program: "P1", // Default program
+          medicalCheckComplete: false,
+        },
+        ...siblings.map(sibling => ({
+          childId: sibling.id,
+          selected: true, // By default select all siblings
+          program: "P1", // Default program
+          medicalCheckComplete: false,
+        }))
+      ];
+      
+      setChildrenToCheckIn(initialChildrenState);
+    } else {
+      // Regular single child mode
+      setMultiCheckInMode(false);
+      setSelectedChild(child);
+    }
+    
     setSearchQuery(child.fullName);
     setSearchResults([]);
     setIsNewChild(false);
@@ -103,6 +142,7 @@ const CheckIn: React.FC = () => {
   const handleNewChildClick = () => {
     setIsNewChild(true);
     setSelectedChild(null);
+    setMultiCheckInMode(false);
     
     const nameParts = searchQuery.split(" ");
     if (nameParts.length >= 2) {
@@ -145,6 +185,7 @@ const CheckIn: React.FC = () => {
       ageGroup: newChildData.ageGroup,
       category: "Guest",
       parents: [],
+      siblingIds: [],
     });
 
     setSelectedChild(newChild);
@@ -152,10 +193,11 @@ const CheckIn: React.FC = () => {
     setIsNewChild(false);
   };
 
-  const handleCheckIn = () => {
+  const handleSingleChildCheckIn = () => {
     if (!selectedChild) return;
 
-    if (!medicalCheckComplete) {
+    // Check if medical check is complete
+    if (!childrenToCheckIn.find(c => c.childId === selectedChild.id)?.medicalCheckComplete) {
       toast({
         title: "Verificare medicală necesară",
         description: "Verificarea medicală completă este obligatorie înainte de a genera eticheta.",
@@ -170,7 +212,12 @@ const CheckIn: React.FC = () => {
       goodCondition: true
     };
 
-    if (programSelection === "Both") {
+    const childState = childrenToCheckIn.find(c => c.childId === selectedChild.id);
+    if (!childState) return;
+    
+    const program = childState.program;
+    
+    if (program === "Both") {
       const attendanceP1 = checkInChild(
         selectedChild.id,
         "P1",
@@ -196,10 +243,10 @@ const CheckIn: React.FC = () => {
         setTagOpen(true);
       }
     } else {
-      const program = programSelection as "P1" | "P2";
+      const checkinProgram = program as "P1" | "P2";
       const attendance = checkInChild(
         selectedChild.id,
-        program,
+        checkinProgram,
         medicalCheckData
       );
 
@@ -208,7 +255,7 @@ const CheckIn: React.FC = () => {
           childName: selectedChild.fullName,
           uniqueCode: attendance.uniqueCode || "",
           ageGroup: selectedChild.ageGroup,
-          program,
+          program: checkinProgram,
           date: format(new Date(currentSunday), "dd.MM.yyyy"),
         };
         
@@ -217,38 +264,143 @@ const CheckIn: React.FC = () => {
       }
     }
   };
+  
+  const handleMultiChildrenCheckIn = () => {
+    // Get all selected children
+    const selectedChildren = childrenToCheckIn.filter(c => c.selected);
+    
+    if (selectedChildren.length === 0) {
+      toast({
+        title: "Niciun copil selectat",
+        description: "Selectați cel puțin un copil pentru check-in.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Check if all selected children have medical checks complete
+    const allMedicalChecksComplete = selectedChildren.every(c => c.medicalCheckComplete);
+    
+    if (!allMedicalChecksComplete) {
+      toast({
+        title: "Verificare medicală necesară",
+        description: "Verificarea medicală completă este obligatorie pentru toți copiii selectați.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    const medicalCheckData = {
+      temperature: true,
+      noSymptoms: true,
+      goodCondition: true
+    };
+    
+    const generatedTagsArray: TagData[] = [];
+    
+    // Process each selected child
+    selectedChildren.forEach(childState => {
+      const child = children.find(c => c.id === childState.childId);
+      if (!child) return;
+      
+      if (childState.program === "Both") {
+        const attendanceP1 = checkInChild(
+          childState.childId,
+          "P1",
+          medicalCheckData
+        );
+        
+        const attendanceP2 = checkInChild(
+          childState.childId,
+          "P2",
+          medicalCheckData
+        );
+        
+        if (attendanceP1 && attendanceP2) {
+          generatedTagsArray.push({
+            childName: child.fullName,
+            uniqueCode: `${attendanceP1.uniqueCode?.split('--')[0]}--P1+P2`,
+            ageGroup: child.ageGroup,
+            program: "Both",
+            date: format(new Date(currentSunday), "dd.MM.yyyy"),
+          });
+        }
+      } else {
+        const program = childState.program as "P1" | "P2";
+        const attendance = checkInChild(
+          childState.childId,
+          program,
+          medicalCheckData
+        );
+        
+        if (attendance) {
+          generatedTagsArray.push({
+            childName: child.fullName,
+            uniqueCode: attendance.uniqueCode || "",
+            ageGroup: child.ageGroup,
+            program,
+            date: format(new Date(currentSunday), "dd.MM.yyyy"),
+          });
+        }
+      }
+    });
+    
+    if (generatedTagsArray.length > 0) {
+      setGeneratedTags(generatedTagsArray);
+      setTagOpen(true);
+    }
+  };
 
   const handlePrintTags = () => {
-    const programInfo = programSelection === "Both" ? "ambele programe" : 
-                        programSelection === "P1" ? "programul 1" : "programul 2";
+    const tagDescriptions = generatedTags?.map(tag => {
+      const programInfo = tag.program === "Both" ? "ambele programe" : 
+                          tag.program === "P1" ? "programul 1" : "programul 2";
+      return `${tag.childName} (${programInfo})`;
+    }).join(", ");
     
     toast({
       title: "Etichete trimise la imprimantă",
-      description: `${tagCount * generatedTags!.length} etichete pentru ${selectedChild?.fullName} (${programInfo}) au fost trimise la imprimantă.`,
+      description: `${tagCount * (generatedTags?.length || 0)} etichete pentru ${tagDescriptions} au fost trimise la imprimantă.`,
     });
     setTagOpen(false);
     
     setSelectedChild(null);
+    setMultiCheckInMode(false);
+    setChildrenToCheckIn([]);
     setSearchQuery("");
-    setMedicalCheckComplete(false);
   };
 
   const handleReset = () => {
     setSelectedChild(null);
     setSearchQuery("");
     setIsNewChild(false);
-    setMedicalCheckComplete(false);
-    setProgramSelection("P1");
+    setMultiCheckInMode(false);
+    setChildrenToCheckIn([]);
+  };
+  
+  const updateChildCheckInState = (
+    childId: string,
+    field: keyof ChildCheckInState,
+    value: any
+  ) => {
+    setChildrenToCheckIn(prev => 
+      prev.map(child => 
+        child.childId === childId 
+          ? { ...child, [field]: value } 
+          : child
+      )
+    );
   };
 
-  const LiveTagPreview = () => {
-    if (!selectedChild) return null;
+  const LiveTagPreview = ({ childId, program }: { childId: string, program: "P1" | "P2" | "Both" }) => {
+    const child = children.find(c => c.id === childId);
+    if (!child) return null;
     
     const previewTag = {
-      childName: selectedChild.fullName,
-      uniqueCode: `${selectedChild.firstName.charAt(0)}${selectedChild.lastName.charAt(0)}--${programSelection === "Both" ? "P1+P2" : programSelection}`,
-      ageGroup: selectedChild.ageGroup,
-      program: programSelection as "P1" | "P2" | "Both",
+      childName: child.fullName,
+      uniqueCode: `${child.firstName.charAt(0)}${child.lastName.charAt(0)}--${program === "Both" ? "P1+P2" : program}`,
+      ageGroup: child.ageGroup,
+      program,
       date: format(new Date(currentSunday), "dd.MM.yyyy"),
     };
     
@@ -273,7 +425,7 @@ const CheckIn: React.FC = () => {
     );
   };
 
-  const TagPreview = ({ tag }: { tag: any }) => {
+  const TagPreview = ({ tag }: { tag: TagData }) => {
     if (!tag) return null;
     
     return (
@@ -295,6 +447,94 @@ const CheckIn: React.FC = () => {
         <div className="text-center text-sm">
           {tag.date}
         </div>
+      </div>
+    );
+  };
+  
+  // Render child item for multi-check-in
+  const renderChildCheckInItem = (childId: string, index: number) => {
+    const child = children.find(c => c.id === childId);
+    if (!child) return null;
+    
+    const childState = childrenToCheckIn.find(c => c.childId === childId);
+    if (!childState) return null;
+    
+    return (
+      <div key={childId} className={`border rounded-md p-4 ${index > 0 ? 'mt-4' : ''}`}>
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <Checkbox 
+              checked={childState.selected}
+              onCheckedChange={(checked) => 
+                updateChildCheckInState(childId, 'selected', checked === true)
+              }
+              id={`select-${childId}`}
+            />
+            <Label htmlFor={`select-${childId}`} className="font-medium text-lg">
+              {child.fullName}
+            </Label>
+          </div>
+          <div className="flex items-center gap-2">
+            <AgeGroupBadge ageGroup={child.ageGroup} />
+            <CategoryBadge category={child.category} />
+            {child.isNew && <NewChildBadge />}
+          </div>
+        </div>
+        
+        {childState.selected && (
+          <>
+            <div className="space-y-2 pl-7">
+              <Label htmlFor={`program-${childId}`}>Participare la Program</Label>
+              <RadioGroup
+                value={childState.program}
+                onValueChange={(value) => 
+                  updateChildCheckInState(childId, 'program', value as "P1" | "P2" | "Both")
+                }
+                className="flex flex-col space-y-1"
+              >
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="P1" id={`p1-${childId}`} />
+                  <Label htmlFor={`p1-${childId}`}>Doar Program 1</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="P2" id={`p2-${childId}`} />
+                  <Label htmlFor={`p2-${childId}`}>Doar Program 2</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="Both" id={`both-${childId}`} />
+                  <Label htmlFor={`both-${childId}`}>Ambele Programe</Label>
+                </div>
+              </RadioGroup>
+            </div>
+
+            <div className="space-y-2 pl-7 mt-4">
+              <h4 className="font-medium">Verificare medicală</h4>
+              <div className="flex items-start space-x-2 p-4 rounded-md border border-gray-200 bg-gray-50">
+                <Checkbox
+                  id={`medical-${childId}`}
+                  checked={childState.medicalCheckComplete}
+                  onCheckedChange={(checked) => 
+                    updateChildCheckInState(childId, 'medicalCheckComplete', checked === true)
+                  }
+                  className="mt-1"
+                />
+                <div className="space-y-1">
+                  <Label htmlFor={`medical-${childId}`} className="font-medium">
+                    Confirmă verificarea medicală completă
+                  </Label>
+                  <p className="text-sm text-muted-foreground">
+                    Confirm că am verificat temperatura, copilul nu prezintă simptome (tuse/febră) 
+                    și este într-o stare generală bună.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-end mt-3 pl-7">
+              <LiveTagPreview childId={childId} program={childState.program} />
+            </div>
+          </>
+        )}
       </div>
     );
   };
@@ -328,7 +568,7 @@ const CheckIn: React.FC = () => {
                   />
                 </div>
 
-                {searchResults.length > 0 && !selectedChild && !isNewChild && (
+                {searchResults.length > 0 && !selectedChild && !isNewChild && !multiCheckInMode && (
                   <div className="absolute z-10 w-full bg-white rounded-md shadow-lg mt-1 border">
                     <ul className="py-1">
                       {searchResults.map((child) => (
@@ -343,6 +583,9 @@ const CheckIn: React.FC = () => {
                               <AgeGroupBadge ageGroup={child.ageGroup} />
                               <CategoryBadge category={child.category} />
                               {child.isNew && <NewChildBadge />}
+                              <SiblingBadge 
+                                count={child.siblingIds?.length || 0} 
+                              />
                             </div>
                           </div>
                         </li>
@@ -351,7 +594,7 @@ const CheckIn: React.FC = () => {
                   </div>
                 )}
 
-                {searchQuery && !selectedChild && searchResults.length === 0 && !isNewChild && (
+                {searchQuery && !selectedChild && searchResults.length === 0 && !isNewChild && !multiCheckInMode && (
                   <div className="mt-2 flex items-center gap-2">
                     <AlertTriangle className="h-4 w-4 text-yellow-500" />
                     <span>Niciun copil găsit. </span>
@@ -436,7 +679,7 @@ const CheckIn: React.FC = () => {
                 </div>
               )}
 
-              {selectedChild && (
+              {selectedChild && !multiCheckInMode && (
                 <div className="border rounded-md p-4 space-y-4">
                   <div className="flex items-center justify-between">
                     <h3 className="font-medium text-lg">{selectedChild.fullName}</h3>
@@ -444,14 +687,19 @@ const CheckIn: React.FC = () => {
                       <AgeGroupBadge ageGroup={selectedChild.ageGroup} />
                       <CategoryBadge category={selectedChild.category} />
                       {selectedChild.isNew && <NewChildBadge />}
+                      <SiblingBadge 
+                        count={selectedChild.siblingIds?.length || 0} 
+                      />
                     </div>
                   </div>
 
                   <div className="space-y-2">
                     <Label htmlFor="program">Participare la Program</Label>
                     <RadioGroup
-                      value={programSelection}
-                      onValueChange={(value) => setProgramSelection(value as "P1" | "P2" | "Both")}
+                      value={childrenToCheckIn[0]?.program || "P1"}
+                      onValueChange={(value) => 
+                        updateChildCheckInState(selectedChild.id, 'program', value as "P1" | "P2" | "Both")
+                      }
                       className="flex flex-col space-y-1"
                     >
                       <div className="flex items-center space-x-2">
@@ -474,8 +722,10 @@ const CheckIn: React.FC = () => {
                     <div className="flex items-start space-x-2 p-4 rounded-md border border-gray-200 bg-gray-50">
                       <Checkbox
                         id="medicalCheckComplete"
-                        checked={medicalCheckComplete}
-                        onCheckedChange={(checked) => setMedicalCheckComplete(checked === true)}
+                        checked={childrenToCheckIn[0]?.medicalCheckComplete || false}
+                        onCheckedChange={(checked) => 
+                          updateChildCheckInState(selectedChild.id, 'medicalCheckComplete', checked === true)
+                        }
                         className="mt-1"
                       />
                       <div className="space-y-1">
@@ -491,8 +741,40 @@ const CheckIn: React.FC = () => {
                   </div>
 
                   <div className="flex justify-end">
-                    <LiveTagPreview />
+                    <LiveTagPreview 
+                      childId={selectedChild.id} 
+                      program={childrenToCheckIn[0]?.program || "P1"} 
+                    />
                   </div>
+                </div>
+              )}
+              
+              {multiCheckInMode && childrenToCheckIn.length > 0 && (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-medium text-lg flex items-center gap-2">
+                      <Users className="h-5 w-5" /> Check-in frați/surori
+                    </h3>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        // Select/deselect all siblings
+                        const allSelected = childrenToCheckIn.every(c => c.selected);
+                        setChildrenToCheckIn(prev => 
+                          prev.map(child => ({ ...child, selected: !allSelected }))
+                        );
+                      }}
+                    >
+                      {childrenToCheckIn.every(c => c.selected) 
+                        ? "Deselectează toți" 
+                        : "Selectează toți"}
+                    </Button>
+                  </div>
+                  
+                  {childrenToCheckIn.map((child, index) => 
+                    renderChildCheckInItem(child.childId, index)
+                  )}
                 </div>
               )}
             </CardContent>
@@ -500,13 +782,23 @@ const CheckIn: React.FC = () => {
               <Button variant="outline" onClick={handleReset}>
                 Resetează
               </Button>
-              <Button
-                onClick={handleCheckIn}
-                disabled={!selectedChild || !medicalCheckComplete}
-              >
-                <Tag className="mr-2 h-4 w-4" />
-                Generează Etichetă
-              </Button>
+              {multiCheckInMode ? (
+                <Button
+                  onClick={handleMultiChildrenCheckIn}
+                  disabled={!childrenToCheckIn.some(c => c.selected && c.medicalCheckComplete)}
+                >
+                  <Tag className="mr-2 h-4 w-4" />
+                  Generează Etichete ({childrenToCheckIn.filter(c => c.selected).length})
+                </Button>
+              ) : (
+                <Button
+                  onClick={handleSingleChildCheckIn}
+                  disabled={!selectedChild || !childrenToCheckIn.some(c => c.medicalCheckComplete)}
+                >
+                  <Tag className="mr-2 h-4 w-4" />
+                  Generează Etichetă
+                </Button>
+              )}
             </CardFooter>
           </Card>
         </div>
@@ -590,14 +882,20 @@ const CheckIn: React.FC = () => {
       <Dialog open={tagOpen} onOpenChange={setTagOpen}>
         <DialogContent className={`${generatedTags && generatedTags.length > 1 ? 'sm:max-w-xl' : 'sm:max-w-md'}`}>
           <DialogHeader>
-            <DialogTitle>Etichetă Generată</DialogTitle>
+            <DialogTitle>
+              {generatedTags && generatedTags.length > 1 
+                ? "Etichete Generate" 
+                : "Etichetă Generată"}
+            </DialogTitle>
             <DialogDescription>
-              Etichete pentru {selectedChild?.fullName}
+              {generatedTags && generatedTags.length > 1 
+                ? `${generatedTags.length} etichete pentru copii selectați` 
+                : `Etichete pentru ${generatedTags?.[0]?.childName}`}
             </DialogDescription>
           </DialogHeader>
           
           {generatedTags && (
-            <div className={`${generatedTags.length > 1 ? 'grid grid-cols-2 gap-4' : ''}`}>
+            <div className={`${generatedTags.length > 1 ? 'grid grid-cols-2 gap-4 max-h-96 overflow-y-auto' : ''}`}>
               {generatedTags.map((tag, index) => (
                 <TagPreview key={index} tag={tag} />
               ))}
@@ -606,7 +904,7 @@ const CheckIn: React.FC = () => {
           
           <div className="space-y-4">
             <div className="flex items-center space-x-2">
-              <Label htmlFor="tagCount">Număr de etichete:</Label>
+              <Label htmlFor="tagCount">Număr de etichete per copil:</Label>
               <Select
                 value={tagCount.toString()}
                 onValueChange={(value) => setTagCount(parseInt(value))}

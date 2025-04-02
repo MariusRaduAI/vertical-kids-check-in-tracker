@@ -21,6 +21,11 @@ interface AppContextType {
   getChildById: (id: string) => Child | undefined;
   searchChildren: (query: string) => Child[];
   
+  // Siblings operations
+  getSiblings: (childId: string) => Child[];
+  addSibling: (childId: string, siblingId: string) => void;
+  removeSibling: (childId: string, siblingId: string) => void;
+  
   // Attendance operations
   checkInChild: (
     childId: string,
@@ -103,6 +108,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children:
       id: `child-${Date.now()}`, // Using timestamp for more unique IDs
       createdAt: now,
       updatedAt: now,
+      siblingIds: childData.siblingIds || [],
     };
     
     setChildren((prev) => [...prev, newChild]);
@@ -136,6 +142,58 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children:
     });
     
     return updatedChild;
+  };
+  
+  // Sibling operations
+  const getSiblings = (childId: string) => {
+    const child = getChildById(childId);
+    if (!child || !child.siblingIds || child.siblingIds.length === 0) {
+      return [];
+    }
+    
+    return children.filter(c => child.siblingIds?.includes(c.id));
+  };
+  
+  const addSibling = (childId: string, siblingId: string) => {
+    if (childId === siblingId) return;
+    
+    const child = getChildById(childId);
+    const sibling = getChildById(siblingId);
+    
+    if (!child || !sibling) return;
+    
+    // Update the child's siblings
+    const childSiblingIds = [...(child.siblingIds || [])];
+    if (!childSiblingIds.includes(siblingId)) {
+      childSiblingIds.push(siblingId);
+      updateChild(childId, { siblingIds: childSiblingIds });
+    }
+    
+    // Update the sibling's siblings
+    const siblingIds = [...(sibling.siblingIds || [])];
+    if (!siblingIds.includes(childId)) {
+      siblingIds.push(childId);
+      updateChild(siblingId, { siblingIds });
+    }
+  };
+  
+  const removeSibling = (childId: string, siblingId: string) => {
+    const child = getChildById(childId);
+    const sibling = getChildById(siblingId);
+    
+    if (!child || !sibling) return;
+    
+    // Remove sibling from child
+    if (child.siblingIds) {
+      const updatedSiblingIds = child.siblingIds.filter(id => id !== siblingId);
+      updateChild(childId, { siblingIds: updatedSiblingIds });
+    }
+    
+    // Remove child from sibling
+    if (sibling.siblingIds) {
+      const updatedSiblingIds = sibling.siblingIds.filter(id => id !== childId);
+      updateChild(siblingId, { siblingIds: updatedSiblingIds });
+    }
   };
   
   const getChildById = (id: string) => {
@@ -336,6 +394,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children:
     updateChild,
     getChildById,
     searchChildren,
+    
+    // Sibling operations
+    getSiblings,
+    addSibling,
+    removeSibling,
     
     // Attendance operations
     checkInChild,
