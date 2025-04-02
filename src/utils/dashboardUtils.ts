@@ -1,5 +1,4 @@
-
-import { format, parseISO, subMonths } from "date-fns";
+import { format, parseISO, subMonths, addDays } from "date-fns";
 import { Attendance, AttendanceSummary, Child } from "@/types/models";
 
 // Determine visible Sundays based on the selected period
@@ -220,4 +219,79 @@ export const getAttendanceTrends = (summaries: Record<string, AttendanceSummary>
       total: summary.total
     };
   });
+};
+
+// Calculate consecutive absences for a child
+export const calculateConsecutiveAbsences = (
+  childId: string,
+  attendance: Attendance[],
+  sundays: string[]
+): number => {
+  // Get all sundays sorted from most recent to oldest
+  const sortedSundays = [...sundays].sort((a, b) => 
+    new Date(b).getTime() - new Date(a).getTime()
+  );
+  
+  let consecutiveCount = 0;
+  
+  // Check each sunday
+  for (const sunday of sortedSundays) {
+    // Get child's attendance for this sunday
+    const childAttendance = attendance.filter(
+      a => a.date === sunday && a.childId === childId
+    );
+    
+    // If child has no attendance records or all are absent
+    const isAbsent = childAttendance.length === 0 || 
+                     childAttendance.every(a => a.status === 'A');
+    
+    if (isAbsent) {
+      consecutiveCount++;
+    } else {
+      // Break the chain if child was present
+      break;
+    }
+  }
+  
+  return consecutiveCount;
+};
+
+// Get children with 3 or more consecutive absences
+export const getChildrenWithConsecutiveAbsences = (
+  children: Child[],
+  attendance: Attendance[],
+  sundays: string[],
+  minConsecutive: number = 3
+): Child[] => {
+  return children.filter(child => {
+    const absences = calculateConsecutiveAbsences(child.id, attendance, sundays);
+    return absences >= minConsecutive;
+  });
+};
+
+// Update a child's consecutive absences count
+export const updateChildConsecutiveAbsences = (
+  child: Child,
+  attendance: Attendance[],
+  sundays: string[]
+): Partial<Child> => {
+  const consecutiveAbsences = calculateConsecutiveAbsences(
+    child.id, 
+    attendance, 
+    sundays
+  );
+  
+  // Find last attendance date
+  const childAttendances = attendance
+    .filter(a => a.childId === child.id && a.status === 'P')
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  
+  const lastAttendanceDate = childAttendances.length > 0 
+    ? childAttendances[0].date 
+    : undefined;
+  
+  return {
+    consecutiveAbsences,
+    lastAttendanceDate
+  };
 };

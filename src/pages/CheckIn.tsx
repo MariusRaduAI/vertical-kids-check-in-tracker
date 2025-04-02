@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useApp } from "@/context/AppContext";
 import PageHeader from "@/components/common/PageHeader";
@@ -25,7 +24,7 @@ import { format } from "date-fns";
 import AgeGroupBadge from "@/components/common/AgeGroupBadge";
 import CategoryBadge from "@/components/common/CategoryBadge";
 import NewChildBadge from "@/components/common/NewChildBadge";
-import SiblingBadge from "@/components/common/SiblingBadge";
+import SiblingBadge, { AbsenceWarningBadge } from "@/components/common/SiblingBadge";
 import { Child, AgeGroup } from "@/types/models";
 import { Search, AlertTriangle, Tag, Printer, BadgePlus, Users } from "lucide-react";
 import { 
@@ -44,6 +43,7 @@ import {
 } from "@/components/ui/popover";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import UpcomingSundayBirthdays from "@/components/checkin/UpcomingSundayBirthdays";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 
 interface ChildCheckInState {
   childId: string;
@@ -70,6 +70,8 @@ const CheckIn: React.FC = () => {
     getAttendanceSummaryForDate,
     children,
     getSiblings,
+    attendance,
+    sundays,
   } = useApp();
   const { toast } = useToast();
 
@@ -78,7 +80,6 @@ const CheckIn: React.FC = () => {
   const [selectedChild, setSelectedChild] = useState<Child | null>(null);
   const [isNewChild, setIsNewChild] = useState(false);
   
-  // Multiple children check-in states
   const [multiCheckInMode, setMultiCheckInMode] = useState(false);
   const [childrenToCheckIn, setChildrenToCheckIn] = useState<ChildCheckInState[]>([]);
   
@@ -105,33 +106,56 @@ const CheckIn: React.FC = () => {
     }
   }, [searchQuery, searchChildren]);
 
+  const showAbsenceWarning = (child: Child) => {
+    if (child.consecutiveAbsences && child.consecutiveAbsences >= 3) {
+      toast({
+        title: "Atenție! Absențe consecutive",
+        description: `${child.fullName} are ${child.consecutiveAbsences} absențe consecutive. Contactați familia.`,
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleSelectChild = (child: Child) => {
     const siblings = getSiblings(child.id);
     
+    showAbsenceWarning(child);
+    
     if (siblings.length > 0) {
-      // Initialize multi-check-in mode with this child and siblings
       setMultiCheckInMode(true);
       
       const initialChildrenState: ChildCheckInState[] = [
         {
           childId: child.id,
           selected: true,
-          program: "P1", // Default program
+          program: "P1" as "P1" | "P2" | "Both",
           medicalCheckComplete: false,
         },
-        ...siblings.map(sibling => ({
-          childId: sibling.id,
-          selected: true, // By default select all siblings
-          program: "P1", // Default program
-          medicalCheckComplete: false,
-        }))
+        ...siblings.map(sibling => {
+          if (sibling.consecutiveAbsences && sibling.consecutiveAbsences >= 3) {
+            showAbsenceWarning(sibling);
+          }
+          
+          return {
+            childId: sibling.id,
+            selected: true,
+            program: "P1" as "P1" | "P2" | "Both",
+            medicalCheckComplete: false,
+          };
+        })
       ];
       
       setChildrenToCheckIn(initialChildrenState);
     } else {
-      // Regular single child mode
       setMultiCheckInMode(false);
       setSelectedChild(child);
+      
+      setChildrenToCheckIn([{
+        childId: child.id,
+        selected: true,
+        program: "P1" as "P1" | "P2" | "Both",
+        medicalCheckComplete: false,
+      }]);
     }
     
     setSearchQuery(child.fullName);
@@ -196,7 +220,6 @@ const CheckIn: React.FC = () => {
   const handleSingleChildCheckIn = () => {
     if (!selectedChild) return;
 
-    // Check if medical check is complete
     if (!childrenToCheckIn.find(c => c.childId === selectedChild.id)?.medicalCheckComplete) {
       toast({
         title: "Verificare medicală necesară",
@@ -266,7 +289,6 @@ const CheckIn: React.FC = () => {
   };
   
   const handleMultiChildrenCheckIn = () => {
-    // Get all selected children
     const selectedChildren = childrenToCheckIn.filter(c => c.selected);
     
     if (selectedChildren.length === 0) {
@@ -278,7 +300,6 @@ const CheckIn: React.FC = () => {
       return;
     }
     
-    // Check if all selected children have medical checks complete
     const allMedicalChecksComplete = selectedChildren.every(c => c.medicalCheckComplete);
     
     if (!allMedicalChecksComplete) {
@@ -298,7 +319,6 @@ const CheckIn: React.FC = () => {
     
     const generatedTagsArray: TagData[] = [];
     
-    // Process each selected child
     selectedChildren.forEach(childState => {
       const child = children.find(c => c.id === childState.childId);
       if (!child) return;
@@ -451,13 +471,14 @@ const CheckIn: React.FC = () => {
     );
   };
   
-  // Render child item for multi-check-in
   const renderChildCheckInItem = (childId: string, index: number) => {
     const child = children.find(c => c.id === childId);
     if (!child) return null;
     
     const childState = childrenToCheckIn.find(c => c.childId === childId);
     if (!childState) return null;
+    
+    const hasAbsenceWarning = child.consecutiveAbsences && child.consecutiveAbsences >= 3;
     
     return (
       <div key={childId} className={`border rounded-md p-4 ${index > 0 ? 'mt-4' : ''}`}>
@@ -478,8 +499,21 @@ const CheckIn: React.FC = () => {
             <AgeGroupBadge ageGroup={child.ageGroup} />
             <CategoryBadge category={child.category} />
             {child.isNew && <NewChildBadge />}
+            {hasAbsenceWarning && (
+              <AbsenceWarningBadge consecutiveAbsences={child.consecutiveAbsences || 0} />
+            )}
           </div>
         </div>
+        
+        {hasAbsenceWarning && childState.selected && (
+          <Alert variant="destructive" className="mb-3">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertTitle>Absențe consecutive</AlertTitle>
+            <AlertDescription>
+              Acest copil are {child.consecutiveAbsences} absențe consecutive. Contactați familia!
+            </AlertDescription>
+          </Alert>
+        )}
         
         {childState.selected && (
           <>
@@ -586,6 +620,9 @@ const CheckIn: React.FC = () => {
                               <SiblingBadge 
                                 count={child.siblingIds?.length || 0} 
                               />
+                              {child.consecutiveAbsences && child.consecutiveAbsences >= 3 && (
+                                <AbsenceWarningBadge consecutiveAbsences={child.consecutiveAbsences} />
+                              )}
                             </div>
                           </div>
                         </li>
@@ -690,8 +727,21 @@ const CheckIn: React.FC = () => {
                       <SiblingBadge 
                         count={selectedChild.siblingIds?.length || 0} 
                       />
+                      {selectedChild.consecutiveAbsences && selectedChild.consecutiveAbsences >= 3 && (
+                        <AbsenceWarningBadge consecutiveAbsences={selectedChild.consecutiveAbsences} />
+                      )}
                     </div>
                   </div>
+                  
+                  {selectedChild.consecutiveAbsences && selectedChild.consecutiveAbsences >= 3 && (
+                    <Alert variant="destructive">
+                      <AlertTriangle className="h-4 w-4" />
+                      <AlertTitle>Absențe consecutive</AlertTitle>
+                      <AlertDescription>
+                        Acest copil are {selectedChild.consecutiveAbsences} absențe consecutive. Contactați familia!
+                      </AlertDescription>
+                    </Alert>
+                  )}
 
                   <div className="space-y-2">
                     <Label htmlFor="program">Participare la Program</Label>
@@ -759,7 +809,6 @@ const CheckIn: React.FC = () => {
                       variant="outline"
                       size="sm"
                       onClick={() => {
-                        // Select/deselect all siblings
                         const allSelected = childrenToCheckIn.every(c => c.selected);
                         setChildrenToCheckIn(prev => 
                           prev.map(child => ({ ...child, selected: !allSelected }))

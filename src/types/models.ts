@@ -23,6 +23,8 @@ export interface Child {
   createdAt: string;
   updatedAt: string;
   siblingIds?: string[]; // Added for sibling relationships
+  consecutiveAbsences?: number; // Track consecutive absences
+  lastAttendanceDate?: string; // Last date the child attended
 }
 
 export type AgeGroup = '0-1' | '1-2' | '2-3' | '4-6' | '7-12';
