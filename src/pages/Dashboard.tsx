@@ -1,9 +1,10 @@
+
 import React, { useState } from "react";
 import { useApp } from "@/context/AppContext";
 import PageHeader from "@/components/common/PageHeader";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { BarChart3, LineChart, PieChart, Users, BadgePlus } from "lucide-react";
+import { BarChart3, LineChart, PieChart, Users, BadgePlus, Gift } from "lucide-react";
 
 // Import refactored components
 import PeriodSelector from "@/components/dashboard/PeriodSelector";
@@ -12,6 +13,7 @@ import AttendanceByAgeChart from "@/components/dashboard/AttendanceByAgeChart";
 import CategoryPieChart from "@/components/dashboard/CategoryPieChart";
 import AttendanceTrendsChart from "@/components/dashboard/AttendanceTrendsChart";
 import TopChildrenList from "@/components/dashboard/TopChildrenList";
+import UpcomingBirthdays from "@/components/dashboard/UpcomingBirthdays";
 
 // Import utility functions
 import {
@@ -154,12 +156,19 @@ const Dashboard: React.FC = () => {
             <CategoryPieChart data={period === "current" ? categoryData : categoryData2} />
           </div>
           
-          <AttendanceTrendsChart
-            data={period === "current" ? attendanceTrends : monthlyAttendance}
-            period={period}
-            title={period === "current" ? "Tendințe de Prezență (Ultimele 5 Duminici)" : "Prezență Lunară"}
-            description={period === "current" ? undefined : "Total copii prezenți în fiecare lună"}
-          />
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+            <div className="md:col-span-2">
+              <AttendanceTrendsChart
+                data={period === "current" ? attendanceTrends : monthlyAttendance}
+                period={period}
+                title={period === "current" ? "Tendințe de Prezență (Ultimele 5 Duminici)" : "Prezență Lunară"}
+                description={period === "current" ? undefined : "Total copii prezenți în fiecare lună"}
+              />
+            </div>
+            <div>
+              <UpcomingBirthdays children={children} days={30} />
+            </div>
+          </div>
         </TabsContent>
         
         <TabsContent value="trends" className="space-y-6 animate-fade-in">
@@ -196,7 +205,7 @@ const Dashboard: React.FC = () => {
         </TabsContent>
         
         <TabsContent value="members" className="animate-fade-in">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
             <TopChildrenList
               data={topPresent}
               title="Top 20 Copii Cei Mai Prezenți"
@@ -211,6 +220,18 @@ const Dashboard: React.FC = () => {
               valueColor="text-red-500"
             />
           </div>
+          
+          <Card className="mb-6">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Gift className="h-5 w-5 text-primary" />
+                Grafic Aniversări
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <UpcomingBirthdays children={children} days={30} />
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
     </div>

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useApp } from "@/context/AppContext";
 import PageHeader from "@/components/common/PageHeader";
@@ -42,6 +41,7 @@ import {
   PopoverTrigger 
 } from "@/components/ui/popover";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import UpcomingSundayBirthdays from "@/components/checkin/UpcomingSundayBirthdays";
 
 const CheckIn: React.FC = () => {
   const {
@@ -51,6 +51,7 @@ const CheckIn: React.FC = () => {
     currentSunday,
     getTotalPresentToday,
     getAttendanceSummaryForDate,
+    children,
   } = useApp();
   const { toast } = useToast();
 
@@ -59,7 +60,6 @@ const CheckIn: React.FC = () => {
   const [selectedChild, setSelectedChild] = useState<Child | null>(null);
   const [isNewChild, setIsNewChild] = useState(false);
   
-  // Change from a single program to a program selection type
   const [programSelection, setProgramSelection] = useState<"P1" | "P2" | "Both">("P1");
   
   const [newChildData, setNewChildData] = useState({
@@ -73,7 +73,6 @@ const CheckIn: React.FC = () => {
   const [tagOpen, setTagOpen] = useState(false);
   const [tagCount, setTagCount] = useState(3);
   
-  // Update the generated tag type to handle both programs
   const [generatedTags, setGeneratedTags] = useState<Array<{
     childName: string;
     uniqueCode: string;
@@ -173,7 +172,6 @@ const CheckIn: React.FC = () => {
 
     const tags = [];
 
-    // Check-in for Program 1 if selected "P1" or "Both"
     if (programSelection === "P1" || programSelection === "Both") {
       const attendanceP1 = checkInChild(
         selectedChild.id,
@@ -192,7 +190,6 @@ const CheckIn: React.FC = () => {
       }
     }
 
-    // Check-in for Program 2 if selected "P2" or "Both"
     if (programSelection === "P2" || programSelection === "Both") {
       const attendanceP2 = checkInChild(
         selectedChild.id,
@@ -269,7 +266,6 @@ const CheckIn: React.FC = () => {
   const LiveTagPreview = () => {
     if (!selectedChild) return null;
     
-    // Create a preview tag depending on the selected program(s)
     const previewTags = [];
     
     if (programSelection === "P1" || programSelection === "Both") {
@@ -465,7 +461,6 @@ const CheckIn: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Replace the Select with RadioGroup for program selection */}
                   <div className="space-y-2">
                     <Label htmlFor="program">Participare la Program</Label>
                     <RadioGroup
@@ -530,7 +525,7 @@ const CheckIn: React.FC = () => {
           </Card>
         </div>
 
-        <div>
+        <div className="space-y-6">
           <Card>
             <CardHeader>
               <CardTitle>Statistici Prezență</CardTitle>
@@ -601,6 +596,8 @@ const CheckIn: React.FC = () => {
               </div>
             </CardContent>
           </Card>
+          
+          <UpcomingSundayBirthdays children={children} weekCount={4} />
         </div>
       </div>
 
