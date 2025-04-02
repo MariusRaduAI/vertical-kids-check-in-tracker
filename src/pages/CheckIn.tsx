@@ -170,47 +170,51 @@ const CheckIn: React.FC = () => {
       goodCondition: true
     };
 
-    const tags = [];
-
-    if (programSelection === "P1" || programSelection === "Both") {
+    if (programSelection === "Both") {
       const attendanceP1 = checkInChild(
         selectedChild.id,
         "P1",
         medicalCheckData
       );
-
-      if (attendanceP1) {
-        tags.push({
-          childName: selectedChild.fullName,
-          uniqueCode: attendanceP1.uniqueCode || "",
-          ageGroup: selectedChild.ageGroup,
-          program: "P1" as "P1" | "P2",
-          date: format(new Date(currentSunday), "dd.MM.yyyy"),
-        });
-      }
-    }
-
-    if (programSelection === "P2" || programSelection === "Both") {
+      
       const attendanceP2 = checkInChild(
         selectedChild.id,
         "P2",
         medicalCheckData
       );
 
-      if (attendanceP2) {
-        tags.push({
+      if (attendanceP1 && attendanceP2) {
+        const combinedTag = {
           childName: selectedChild.fullName,
-          uniqueCode: attendanceP2.uniqueCode || "",
+          uniqueCode: `${attendanceP1.uniqueCode?.split('--')[0]}--P1+P2`,
           ageGroup: selectedChild.ageGroup,
-          program: "P2" as "P1" | "P2",
+          program: "Both" as "P1" | "P2" | "Both",
           date: format(new Date(currentSunday), "dd.MM.yyyy"),
-        });
+        };
+        
+        setGeneratedTags([combinedTag]);
+        setTagOpen(true);
       }
-    }
+    } else {
+      const program = programSelection as "P1" | "P2";
+      const attendance = checkInChild(
+        selectedChild.id,
+        program,
+        medicalCheckData
+      );
 
-    if (tags.length > 0) {
-      setGeneratedTags(tags);
-      setTagOpen(true);
+      if (attendance) {
+        const tag = {
+          childName: selectedChild.fullName,
+          uniqueCode: attendance.uniqueCode || "",
+          ageGroup: selectedChild.ageGroup,
+          program,
+          date: format(new Date(currentSunday), "dd.MM.yyyy"),
+        };
+        
+        setGeneratedTags([tag]);
+        setTagOpen(true);
+      }
     }
   };
 
@@ -237,7 +241,39 @@ const CheckIn: React.FC = () => {
     setProgramSelection("P1");
   };
 
-  const TagPreview = ({ tag }: { tag: typeof generatedTags extends Array<infer T> ? T : never }) => {
+  const LiveTagPreview = () => {
+    if (!selectedChild) return null;
+    
+    const previewTag = {
+      childName: selectedChild.fullName,
+      uniqueCode: `${selectedChild.firstName.charAt(0)}${selectedChild.lastName.charAt(0)}--${programSelection === "Both" ? "P1+P2" : programSelection}`,
+      ageGroup: selectedChild.ageGroup,
+      program: programSelection as "P1" | "P2" | "Both",
+      date: format(new Date(currentSunday), "dd.MM.yyyy"),
+    };
+    
+    return (
+      <Popover>
+        <PopoverTrigger asChild>
+          <Button variant="outline" size="sm" className="flex gap-2">
+            <Tag className="h-4 w-4" />
+            Previzualizare etichetă
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-80 p-0">
+          <div className="p-4">
+            <h4 className="font-semibold mb-2">Previzualizare etichetă</h4>
+            <TagPreview tag={previewTag} />
+            <p className="text-xs text-muted-foreground mt-2">
+              Aceasta este o previzualizare. Codul unic final va fi generat la check-in.
+            </p>
+          </div>
+        </PopoverContent>
+      </Popover>
+    );
+  };
+
+  const TagPreview = ({ tag }: { tag: any }) => {
     if (!tag) return null;
     
     return (
@@ -252,7 +288,7 @@ const CheckIn: React.FC = () => {
         <div className="flex justify-between items-center">
           <AgeGroupBadge ageGroup={tag.ageGroup} className="text-sm" />
           <div className="px-2 py-1 bg-primary text-white rounded-full text-sm">
-            {tag.program}
+            {tag.program === "Both" ? "P1+P2" : tag.program}
           </div>
         </div>
         
@@ -260,56 +296,6 @@ const CheckIn: React.FC = () => {
           {tag.date}
         </div>
       </div>
-    );
-  };
-
-  const LiveTagPreview = () => {
-    if (!selectedChild) return null;
-    
-    const previewTags = [];
-    
-    if (programSelection === "P1" || programSelection === "Both") {
-      previewTags.push({
-        childName: selectedChild.fullName,
-        uniqueCode: `${selectedChild.firstName.charAt(0)}${selectedChild.lastName.charAt(0)}--P1`,
-        ageGroup: selectedChild.ageGroup,
-        program: "P1" as "P1" | "P2",
-        date: format(new Date(currentSunday), "dd.MM.yyyy"),
-      });
-    }
-    
-    if (programSelection === "P2" || programSelection === "Both") {
-      previewTags.push({
-        childName: selectedChild.fullName,
-        uniqueCode: `${selectedChild.firstName.charAt(0)}${selectedChild.lastName.charAt(0)}--P2`,
-        ageGroup: selectedChild.ageGroup,
-        program: "P2" as "P1" | "P2",
-        date: format(new Date(currentSunday), "dd.MM.yyyy"),
-      });
-    }
-    
-    return (
-      <Popover>
-        <PopoverTrigger asChild>
-          <Button variant="outline" size="sm" className="flex gap-2">
-            <Tag className="h-4 w-4" />
-            Previzualizare etichetă
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className={`${previewTags.length > 1 ? 'w-auto' : 'w-80'} p-0`}>
-          <div className="p-4">
-            <h4 className="font-semibold mb-2">Previzualizare etichetă</h4>
-            <div className={`${previewTags.length > 1 ? 'grid grid-cols-2 gap-4' : ''}`}>
-              {previewTags.map((tag, index) => (
-                <TagPreview key={index} tag={tag} />
-              ))}
-            </div>
-            <p className="text-xs text-muted-foreground mt-2">
-              Aceasta este o previzualizare. Codul unic final va fi generat la check-in.
-            </p>
-          </div>
-        </PopoverContent>
-      </Popover>
     );
   };
 
