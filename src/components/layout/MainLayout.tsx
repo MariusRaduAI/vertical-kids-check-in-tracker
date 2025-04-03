@@ -15,10 +15,10 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
         <AppSidebar />
         <div className="flex-1 flex flex-col">
           <TopBar />
-          <main className="flex-1 p-6 overflow-auto">
+          <main className="flex-1 p-4 md:p-6 overflow-auto">
             {children}
           </main>
-          <footer className="py-4 px-6 border-t text-center text-sm text-muted-foreground">
+          <footer className="py-3 px-4 md:py-4 md:px-6 border-t text-center text-xs md:text-sm text-muted-foreground">
             <p>Vertical Kids București © {new Date().getFullYear()}</p>
           </footer>
         </div>

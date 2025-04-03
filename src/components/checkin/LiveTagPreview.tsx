@@ -33,14 +33,15 @@ const LiveTagPreview: React.FC<LiveTagPreviewProps> = ({ childId, program }) => 
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <Button variant="outline" size="sm" className="flex gap-2">
-          <Tag className="h-4 w-4" />
-          Previzualizare etichetă
+        <Button variant="outline" size="sm" className="flex gap-1 md:gap-2 text-xs md:text-sm h-8 md:h-9 px-2 md:px-3">
+          <Tag className="h-3 w-3 md:h-4 md:w-4" />
+          <span className="hidden sm:inline">Previzualizare</span>
+          <span className="sm:hidden">Tag</span>
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-80 p-0">
-        <div className="p-4">
-          <h4 className="font-semibold mb-2">Previzualizare etichetă</h4>
+      <PopoverContent className="w-64 sm:w-72 md:w-80 p-0">
+        <div className="p-3 md:p-4">
+          <h4 className="font-semibold mb-2 text-sm md:text-base">Previzualizare etichetă</h4>
           <TagPreview tag={previewTag} />
           <p className="text-xs text-muted-foreground mt-2">
             Aceasta este o previzualizare. Codul unic final va fi generat la check-in.
