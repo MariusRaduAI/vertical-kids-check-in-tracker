@@ -1,40 +1,42 @@
 
-import React, { useState } from "react";
+import React from "react";
 import { useApp } from "@/context/AppContext";
 import PageHeader from "@/components/common/PageHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { format } from "date-fns";
-import { Child, AgeGroup } from "@/types/models";
+import { Child } from "@/types/models";
 
-// Import refactored components
+// Import components and hooks
 import MemberTable from "@/components/members/MemberTable";
 import MemberFilters from "@/components/members/MemberFilters";
 import AddEditMemberDialog from "@/components/members/AddEditMemberDialog";
 import MemberActions from "@/components/members/MemberActions";
+import { useMemberForm } from "@/hooks/useMemberForm";
 
 const MembersPage: React.FC = () => {
   const { children, addChild, updateChild } = useApp();
   
-  const [searchQuery, setSearchQuery] = useState("");
+  // State for search filtering
+  const [searchQuery, setSearchQuery] = React.useState("");
   
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
-  const [selectedChildId, setSelectedChildId] = useState<string | null>(null);
-  const [childFormData, setChildFormData] = useState<Partial<Child>>({
-    firstName: "",
-    lastName: "",
-    birthDate: "",
-    ageGroup: "4-6",
-    category: "Membru",
-    parents: [""],
-    phone: "",
-    email: "",
-    hasAllergies: false,
-    allergiesDetails: "",
-    hasSpecialNeeds: false,
-    specialNeedsDetails: ""
-  });
+  // Custom hook for form management
+  const {
+    isDialogOpen,
+    setIsDialogOpen,
+    isEditing,
+    selectedChildId,
+    childFormData,
+    handleAddNewClick,
+    handleEditClick,
+    handleInputChange,
+    handleParentChange,
+    handleAddParent,
+    handleRemoveParent,
+    handleCheckboxChange,
+    handleAgeGroupChange,
+    handleCategoryChange
+  } = useMemberForm();
   
+  // Filter children based on search query
   const getFilteredChildren = () => {
     if (!searchQuery) return children;
     
@@ -45,102 +47,9 @@ const MembersPage: React.FC = () => {
     );
   };
   
-  const handleAddNewClick = () => {
-    setIsEditing(false);
-    setSelectedChildId(null);
-    setChildFormData({
-      firstName: "",
-      lastName: "",
-      birthDate: format(new Date(), "yyyy-MM-dd"),
-      ageGroup: "4-6",
-      category: "Membru",
-      parents: [""],
-      phone: "",
-      email: "",
-      hasAllergies: false,
-      allergiesDetails: "",
-      hasSpecialNeeds: false,
-      specialNeedsDetails: ""
-    });
-    setIsDialogOpen(true);
-  };
+  const filteredChildren = getFilteredChildren();
   
-  const handleEditClick = (child: Child) => {
-    setIsEditing(true);
-    setSelectedChildId(child.id);
-    setChildFormData({
-      firstName: child.firstName,
-      lastName: child.lastName,
-      birthDate: child.birthDate,
-      ageGroup: child.ageGroup,
-      category: child.category,
-      parents: [...child.parents],
-      phone: child.phone || "",
-      email: child.email || "",
-      hasAllergies: child.hasAllergies || false,
-      allergiesDetails: child.allergiesDetails || "",
-      hasSpecialNeeds: child.hasSpecialNeeds || false,
-      specialNeedsDetails: child.specialNeedsDetails || ""
-    });
-    setIsDialogOpen(true);
-  };
-  
-  const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    const { name, value } = e.target;
-    setChildFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
-  
-  const handleParentChange = (index: number, value: string) => {
-    const newParents = [...(childFormData.parents || [])];
-    newParents[index] = value;
-    setChildFormData(prev => ({
-      ...prev,
-      parents: newParents
-    }));
-  };
-  
-  const handleAddParent = () => {
-    setChildFormData(prev => ({
-      ...prev,
-      parents: [...(prev.parents || []), ""]
-    }));
-  };
-  
-  const handleRemoveParent = (index: number) => {
-    const newParents = [...(childFormData.parents || [])];
-    newParents.splice(index, 1);
-    setChildFormData(prev => ({
-      ...prev,
-      parents: newParents
-    }));
-  };
-  
-  const handleCheckboxChange = (field: string, checked: boolean) => {
-    setChildFormData(prev => ({
-      ...prev,
-      [field]: checked
-    }));
-  };
-
-  const handleAgeGroupChange = (value: string) => {
-    setChildFormData(prev => ({ 
-      ...prev, 
-      ageGroup: value as AgeGroup 
-    }));
-  };
-
-  const handleCategoryChange = (value: string) => {
-    setChildFormData(prev => ({ 
-      ...prev, 
-      category: value as "Membru" | "Guest" 
-    }));
-  };
-  
+  // Save child handler
   const handleSaveChild = () => {
     if (!childFormData.firstName || !childFormData.lastName) {
       return;
@@ -158,10 +67,10 @@ const MembersPage: React.FC = () => {
         firstName: childFormData.firstName || "",
         lastName: childFormData.lastName || "",
         fullName: fullName,
-        birthDate: childFormData.birthDate || format(new Date(), "yyyy-MM-dd"),
+        birthDate: childFormData.birthDate || "",
         age: 0,
         daysUntilBirthday: 0,
-        ageGroup: childFormData.ageGroup as AgeGroup,
+        ageGroup: childFormData.ageGroup!,
         category: childFormData.category as "Membru" | "Guest",
         parents: childFormData.parents || [],
         phone: childFormData.phone,
@@ -175,8 +84,6 @@ const MembersPage: React.FC = () => {
     
     setIsDialogOpen(false);
   };
-  
-  const filteredChildren = getFilteredChildren();
 
   return (
     <div className="animate-fade-in">
