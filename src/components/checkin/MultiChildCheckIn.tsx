@@ -55,7 +55,7 @@ const MultiChildCheckIn: React.FC<MultiChildCheckInProps> = ({
     const hasAbsenceWarning = child.consecutiveAbsences && child.consecutiveAbsences >= 3;
     
     return (
-      <div key={childId} className={`border rounded-md p-4 ${index > 0 ? 'mt-4' : ''}`}>
+      <div key={childId} className={`border rounded-md p-4 ${index > 0 ? 'mt-4' : ''} ${hasAbsenceWarning ? 'border-red-300 bg-red-50' : ''}`}>
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <Checkbox 
@@ -80,11 +80,11 @@ const MultiChildCheckIn: React.FC<MultiChildCheckInProps> = ({
         </div>
         
         {hasAbsenceWarning && childState.selected && (
-          <Alert variant="destructive" className="mb-3">
+          <Alert variant="destructive" className="mb-3 border-red-500 bg-red-100">
             <AlertTriangle className="h-4 w-4" />
-            <AlertTitle>Absențe consecutive</AlertTitle>
-            <AlertDescription>
-              Acest copil are {child.consecutiveAbsences} absențe consecutive. Contactați familia!
+            <AlertTitle className="font-bold">ATENȚIE: Absențe consecutive</AlertTitle>
+            <AlertDescription className="font-medium">
+              Acest copil are {child.consecutiveAbsences} absențe consecutive. Contactați familia URGENT!
             </AlertDescription>
           </Alert>
         )}

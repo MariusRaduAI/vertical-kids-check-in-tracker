@@ -29,10 +29,17 @@ import { format, parseISO, startOfWeek, endOfWeek, startOfMonth, endOfMonth, sub
 import AgeGroupBadge from "@/components/common/AgeGroupBadge";
 import CategoryBadge from "@/components/common/CategoryBadge";
 import { Child, AgeGroup, Attendance as AttendanceType } from "@/types/models";
-import { Search, Download, Filter } from "lucide-react";
+import { Search, Download, Filter, AlertTriangle, Users } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { 
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 const AttendancePage: React.FC = () => {
-  const { children, attendance, sundays } = useApp();
+  const { children, attendance, sundays, getSiblings } = useApp();
   
   // Filters
   const [searchQuery, setSearchQuery] = useState("");
@@ -147,6 +154,16 @@ const AttendancePage: React.FC = () => {
     };
   };
 
+  // Helper to get consecutive absences
+  const hasConsecutiveAbsences = (child: Child) => {
+    return child.consecutiveAbsences && child.consecutiveAbsences >= 3;
+  };
+
+  // Helper to get siblings
+  const getChildSiblings = (childId: string) => {
+    return getSiblings(childId);
+  };
+
   return (
     <div className="animate-fade-in">
       <PageHeader
@@ -235,9 +252,11 @@ const AttendancePage: React.FC = () => {
               <TableHeader>
                 <TableRow>
                   <TableHead className="w-[250px] sticky left-0 bg-white">Nume</TableHead>
+                  <TableHead>Frați/Surori</TableHead>
                   <TableHead>Grupa</TableHead>
                   <TableHead>Categorie</TableHead>
                   <TableHead>% Prezență</TableHead>
+                  <TableHead>Status</TableHead>
                   
                   {visibleSundays.map(sunday => (
                     <TableHead key={sunday} className="text-center" colSpan={2}>
@@ -255,11 +274,52 @@ const AttendancePage: React.FC = () => {
               <TableBody>
                 {filteredChildren.map(child => {
                   const stats = calculateAttendanceStats(child.id);
+                  const hasWarning = hasConsecutiveAbsences(child);
+                  const siblings = getChildSiblings(child.id);
                   
                   return (
-                    <TableRow key={child.id}>
+                    <TableRow key={child.id} className={hasWarning ? "bg-red-50" : ""}>
                       <TableCell className="font-medium sticky left-0 bg-white">
-                        {child.fullName}
+                        <div className="flex items-center gap-2">
+                          {child.fullName}
+                          {hasWarning && (
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger>
+                                  <AlertTriangle className="h-4 w-4 text-red-500" />
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p className="font-semibold">Atenție!</p>
+                                  <p>{child.consecutiveAbsences} absențe consecutive</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        {siblings.length > 0 ? (
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger>
+                                <Badge variant="outline" className="gap-1 cursor-help">
+                                  <Users className="h-3 w-3" />
+                                  {siblings.length}
+                                </Badge>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p className="font-semibold">Frați/Surori:</p>
+                                <ul className="list-disc pl-4 text-sm">
+                                  {siblings.map(sibling => (
+                                    <li key={sibling.id}>{sibling.fullName}</li>
+                                  ))}
+                                </ul>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        ) : (
+                          "-"
+                        )}
                       </TableCell>
                       <TableCell>
                         <AgeGroupBadge ageGroup={child.ageGroup} />
@@ -277,6 +337,14 @@ const AttendancePage: React.FC = () => {
                           </div>
                           <span className="text-xs">{stats.attendancePercentage}%</span>
                         </div>
+                      </TableCell>
+                      <TableCell>
+                        {hasWarning && (
+                          <Badge variant="destructive" className="gap-1">
+                            <AlertTriangle className="h-3 w-3" />
+                            {child.consecutiveAbsences} absențe
+                          </Badge>
+                        )}
                       </TableCell>
                       
                       {visibleSundays.map(sunday => (
@@ -313,7 +381,7 @@ const AttendancePage: React.FC = () => {
                 
                 {/* Summary row */}
                 <TableRow className="bg-muted/50">
-                  <TableCell className="font-bold sticky left-0 bg-muted/50" colSpan={4}>
+                  <TableCell className="font-bold sticky left-0 bg-muted/50" colSpan={6}>
                     Total prezențe
                   </TableCell>
                   
