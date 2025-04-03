@@ -57,7 +57,7 @@ const AppSidebar: React.FC = () => {
       section: "Principal",
     },
     {
-      title: "Training & Onboarding",
+      title: "Training",
       url: "/training",
       icon: BookOpen,
       section: "Suport",

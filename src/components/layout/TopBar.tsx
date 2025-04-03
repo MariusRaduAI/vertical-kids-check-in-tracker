@@ -13,6 +13,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import EmergencyContacts from "./EmergencyContacts";
 
 const TopBar: React.FC = () => {
   const today = new Date();
@@ -38,6 +39,7 @@ const TopBar: React.FC = () => {
       </div>
 
       <div className="flex items-center gap-1 md:gap-2">
+        <EmergencyContacts />
         <Button variant="ghost" size="icon" className="h-8 w-8 md:h-9 md:w-9">
           <HelpCircle className="h-4 w-4 md:h-5 md:w-5" />
         </Button>

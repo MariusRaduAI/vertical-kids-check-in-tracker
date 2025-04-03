@@ -15,9 +15,9 @@ const EmergencyContacts: React.FC = () => {
   return (
     <Sheet>
       <SheetTrigger asChild>
-        <Button variant="outline" size="sm" className="gap-2">
+        <Button variant="outline" size="sm" className="gap-1 h-8 md:h-9">
           <Phone className="h-4 w-4" />
-          <span className="hidden sm:inline">Contacte urgență</span>
+          <span className="hidden sm:inline">Urgență</span>
         </Button>
       </SheetTrigger>
       <SheetContent>
