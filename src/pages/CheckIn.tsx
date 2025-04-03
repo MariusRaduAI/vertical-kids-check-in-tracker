@@ -14,15 +14,40 @@ import Stats from "@/components/checkin/Stats";
 import UpcomingSundayBirthdays from "@/components/checkin/UpcomingSundayBirthdays";
 
 const CheckIn: React.FC = () => {
-  const { currentSunday, children, getTotalForDate, getAttendanceSummaryForDate } = useApp();
+  const { currentSunday, children, getAttendanceSummaryForDate } = useApp();
   const [selectedChild, setSelectedChild] = useState<Child | null>(null);
   const [selectedChildren, setSelectedChildren] = useState<Child[]>([]);
   const [activeTab, setActiveTab] = useState("search");
   const [shouldCheckMedicalStatus, setShouldCheckMedicalStatus] = useState(true);
   const [showTagsDialog, setShowTagsDialog] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<Child[]>([]);
+  const [isNewChild, setIsNewChild] = useState(false);
+  const [newChildData, setNewChildData] = useState({
+    firstName: "",
+    lastName: "",
+    ageGroup: "4-6" as const
+  });
 
-  const handleSearch = (child: Child) => {
+  // Search functionality
+  const handleSearchChange = (query: string) => {
+    setSearchQuery(query);
+    if (query.trim().length >= 2) {
+      const results = children.filter(child => 
+        child.fullName.toLowerCase().includes(query.toLowerCase()) ||
+        child.firstName.toLowerCase().includes(query.toLowerCase()) ||
+        child.lastName.toLowerCase().includes(query.toLowerCase())
+      );
+      setSearchResults(results);
+    } else {
+      setSearchResults([]);
+    }
+  };
+
+  const handleChildSelect = (child: Child) => {
     setSelectedChild(child);
+    setSearchQuery("");
+    setSearchResults([]);
     if (child.siblingIds?.length) {
       setActiveTab("multi-checkin");
     } else {
@@ -30,28 +55,37 @@ const CheckIn: React.FC = () => {
     }
   };
 
-  const handleAddNew = () => {
-    setSelectedChild(null);
-    setActiveTab("add-new");
+  const handleMultiSelectSiblings = (children: Child[]) => {
+    setSelectedChildren(children);
+    setSearchQuery("");
+    setSearchResults([]);
+    setActiveTab("multi-checkin");
   };
 
-  const handleMultiChildSearch = (children: Child[]) => {
-    setSelectedChildren(children);
-    setActiveTab("multi-checkin");
+  const handleAddNew = () => {
+    setIsNewChild(true);
+    setSelectedChild(null);
+    setActiveTab("add-new");
   };
 
   const handlePrintComplete = () => {
     setSelectedChild(null);
     setSelectedChildren([]);
     setActiveTab("search");
+    setIsNewChild(false);
   };
 
   const handleShowTags = () => {
     setShowTagsDialog(true);
   };
 
-  // Stats for today
-  const stats = getTotalForDate(currentSunday);
+  const handleCreateNewChild = () => {
+    // This would be handled by the NewChildForm component
+    setIsNewChild(false);
+    setActiveTab("search");
+  };
+
+  // Get attendance summary
   const summary = getAttendanceSummaryForDate(currentSunday);
 
   return (
@@ -79,18 +113,26 @@ const CheckIn: React.FC = () => {
               <CardContent className="p-3 md:p-6">
                 <TabsContent value="search" className="m-0">
                   <ChildSearch
-                    onChildSelect={handleSearch}
-                    onMultiChildSelect={handleMultiChildSearch}
-                    onAddNew={handleAddNew}
-                    onTagsClick={handleShowTags}
+                    searchQuery={searchQuery}
+                    setSearchQuery={handleSearchChange}
+                    searchResults={searchResults}
+                    onSelectChild={handleChildSelect}
+                    onNewChildClick={handleAddNew}
+                    selectedChild={selectedChild}
+                    isNewChild={isNewChild}
+                    multiCheckInMode={false}
+                    onMultiSelectSiblings={handleMultiSelectSiblings}
                   />
                 </TabsContent>
 
                 <TabsContent value="add-new" className="m-0">
                   <NewChildForm 
-                    onSave={(child) => {
-                      setSelectedChild(child);
-                      setActiveTab("single-checkin");
+                    newChildData={newChildData}
+                    setNewChildData={setNewChildData}
+                    onCreateNewChild={handleCreateNewChild}
+                    onCancel={() => {
+                      setIsNewChild(false);
+                      setActiveTab("search");
                     }}
                   />
                 </TabsContent>
@@ -99,9 +141,6 @@ const CheckIn: React.FC = () => {
                   {selectedChild && (
                     <SingleChildCheckIn
                       child={selectedChild}
-                      date={currentSunday}
-                      checkMedical={shouldCheckMedicalStatus}
-                      onCheckMedicalChange={setShouldCheckMedicalStatus}
                       onPrintComplete={handlePrintComplete}
                     />
                   )}
@@ -110,9 +149,6 @@ const CheckIn: React.FC = () => {
                 <TabsContent value="multi-checkin" className="m-0">
                   <MultiChildCheckIn
                     children={selectedChildren.length > 0 ? selectedChildren : selectedChild ? [selectedChild] : []}
-                    date={currentSunday}
-                    checkMedical={shouldCheckMedicalStatus}
-                    onCheckMedicalChange={setShouldCheckMedicalStatus}
                     onPrintComplete={handlePrintComplete}
                   />
                 </TabsContent>
@@ -127,17 +163,23 @@ const CheckIn: React.FC = () => {
           
           <Stats 
             currentSunday={currentSunday} 
-            stats={stats} 
-            summary={summary} 
+            stats={summary ? {
+              totalP1: summary.totalP1,
+              totalP2: summary.totalP2,
+              total: summary.total,
+              newChildren: summary.newChildrenCount
+            } : { totalP1: 0, totalP2: 0, total: 0, newChildren: 0 }}
+            summary={summary}
           />
         </div>
       </div>
 
       {showTagsDialog && (
         <TagsDialog 
-          date={currentSunday} 
           open={showTagsDialog} 
           onOpenChange={setShowTagsDialog} 
+          date={currentSunday}
+          preselectedChildren={selectedChild ? [selectedChild] : selectedChildren}
         />
       )}
     </div>

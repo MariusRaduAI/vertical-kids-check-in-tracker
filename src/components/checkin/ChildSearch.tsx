@@ -2,12 +2,14 @@
 import React, { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, AlertTriangle } from "lucide-react";
+import { Search, AlertTriangle, Users } from "lucide-react";
 import { Child } from "@/types/models";
 import AgeGroupBadge from "@/components/common/AgeGroupBadge";
 import CategoryBadge from "@/components/common/CategoryBadge";
 import NewChildBadge from "@/components/common/NewChildBadge";
 import SiblingBadge, { AbsenceWarningBadge } from "@/components/common/SiblingBadge";
+import { useApp } from "@/context/AppContext";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface ChildSearchProps {
   searchQuery: string;
@@ -18,6 +20,7 @@ interface ChildSearchProps {
   selectedChild: Child | null;
   isNewChild: boolean;
   multiCheckInMode: boolean;
+  onMultiSelectSiblings?: (siblings: Child[]) => void;
 }
 
 const ChildSearch: React.FC<ChildSearchProps> = ({
@@ -28,8 +31,11 @@ const ChildSearch: React.FC<ChildSearchProps> = ({
   onNewChildClick,
   selectedChild,
   isNewChild,
-  multiCheckInMode
+  multiCheckInMode,
+  onMultiSelectSiblings
 }) => {
+  const { getSiblings } = useApp();
+  
   return (
     <div className="relative">
       <div className="relative">
@@ -46,28 +52,52 @@ const ChildSearch: React.FC<ChildSearchProps> = ({
       {searchResults.length > 0 && !selectedChild && !isNewChild && !multiCheckInMode && (
         <div className="absolute z-10 w-full bg-white rounded-md shadow-lg mt-1 border">
           <ul className="py-1">
-            {searchResults.map((child) => (
-              <li
-                key={child.id}
-                className="px-4 py-2 hover:bg-muted cursor-pointer flex items-center justify-between"
-                onClick={() => onSelectChild(child)}
-              >
-                <div>
-                  <span className="font-medium">{child.fullName}</span>
-                  <div className="flex items-center gap-2 mt-1">
-                    <AgeGroupBadge ageGroup={child.ageGroup} />
-                    <CategoryBadge category={child.category} />
-                    {child.isNew && <NewChildBadge />}
-                    <SiblingBadge 
-                      count={child.siblingIds?.length || 0} 
-                    />
-                    {child.consecutiveAbsences && child.consecutiveAbsences >= 3 && (
-                      <AbsenceWarningBadge consecutiveAbsences={child.consecutiveAbsences} />
+            {searchResults.map((child) => {
+              const siblings = getSiblings(child.id);
+              const hasSiblings = siblings.length > 0;
+              
+              return (
+                <li
+                  key={child.id}
+                  className="px-4 py-2 hover:bg-muted cursor-pointer"
+                >
+                  <div className="flex justify-between items-start">
+                    <div onClick={() => onSelectChild(child)}>
+                      <span className="font-medium">{child.fullName}</span>
+                      <div className="flex flex-wrap items-center gap-2 mt-1">
+                        <AgeGroupBadge ageGroup={child.ageGroup} />
+                        <CategoryBadge category={child.category} />
+                        {child.isNew && <NewChildBadge />}
+                        {child.consecutiveAbsences && child.consecutiveAbsences >= 3 && (
+                          <AbsenceWarningBadge consecutiveAbsences={child.consecutiveAbsences} />
+                        )}
+                      </div>
+                    </div>
+                    
+                    {hasSiblings && onMultiSelectSiblings && (
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              className="ml-2 flex items-center text-xs text-cyan-600"
+                              onClick={() => onMultiSelectSiblings([child, ...siblings])}
+                            >
+                              <Users className="h-3.5 w-3.5 mr-1" />
+                              <span>+{siblings.length}</span>
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p className="text-sm">Check-in cu frați/surori: {siblings.map(s => s.fullName).join(", ")}</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
                     )}
                   </div>
-                </div>
-              </li>
-            ))}
+                </li>
+              );
+            })}
           </ul>
         </div>
       )}
