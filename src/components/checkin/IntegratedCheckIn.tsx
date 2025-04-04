@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+
+import React, { useState, useEffect } from "react";
 import { Child } from "@/types/models";
 import { Button } from "@/components/ui/button";
 import { Tag } from "lucide-react";
@@ -28,6 +29,14 @@ const IntegratedCheckIn: React.FC<IntegratedCheckInProps> = ({
   
   const [childrenToCheckIn, setChildrenToCheckIn] = useState<ChildCheckInState[]>([]);
   
+  // If there are children available, select the first one by default to show the full form
+  useEffect(() => {
+    if (children.length > 0 && !selectedChild) {
+      const firstChild = children[0];
+      handleChildSelect(firstChild);
+    }
+  }, [children]);
+  
   const handleChildSelect = (child: Child) => {
     setSelectedChild(child);
     setSearchResults([]);
@@ -38,7 +47,7 @@ const IntegratedCheckIn: React.FC<IntegratedCheckInProps> = ({
       {
         childId: child.id,
         selected: true,
-        program: "P1",
+        program: "P1" as "P1" | "P2" | "Both", // Explicitly type as union type
         medicalCheckComplete: false,
       }
     ]);
@@ -56,7 +65,7 @@ const IntegratedCheckIn: React.FC<IntegratedCheckInProps> = ({
         {
           childId: siblingId,
           selected: true,
-          program: "P1",
+          program: "P1" as "P1" | "P2" | "Both", // Explicitly type as union type
           medicalCheckComplete: false
         }
       ]);
@@ -81,13 +90,13 @@ const IntegratedCheckIn: React.FC<IntegratedCheckInProps> = ({
       {
         childId: child.id,
         selected: true,
-        program: "P1",
+        program: "P1" as "P1" | "P2" | "Both", // Explicitly type as union type
         medicalCheckComplete: false,
       },
       ...siblings.map(sibling => ({
         childId: sibling.id,
         selected: true,
-        program: "P1",
+        program: "P1" as "P1" | "P2" | "Both", // Explicitly type as union type
         medicalCheckComplete: false,
       }))
     ];
@@ -109,6 +118,13 @@ const IntegratedCheckIn: React.FC<IntegratedCheckInProps> = ({
   
   const handleCheckInComplete = () => {
     if (selectedChild) {
+      recordAttendance();
+    }
+  };
+  
+  // This function records attendance
+  const recordAttendance = () => {
+    if (selectedChild) {
       const programsToCheckIn = program === "Both" ? ["P1", "P2"] : [program];
       
       programsToCheckIn.forEach(p => {
@@ -129,7 +145,11 @@ const IntegratedCheckIn: React.FC<IntegratedCheckInProps> = ({
         }
       });
     }
-    
+  };
+  
+  // Show tags dialog and record attendance
+  const handleShowTagsDialog = () => {
+    recordAttendance();
     setShowTagsDialog(true);
   };
   
@@ -183,7 +203,7 @@ const IntegratedCheckIn: React.FC<IntegratedCheckInProps> = ({
             medicalCheckComplete={medicalCheckComplete}
             setMedicalCheckComplete={setMedicalCheckComplete}
             handleCheckInComplete={handleCheckInComplete}
-            setShowTagsDialog={setShowTagsDialog}
+            setShowTagsDialog={handleShowTagsDialog}
             currentSunday={currentSunday}
           />
         )}

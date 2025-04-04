@@ -127,6 +127,7 @@ const CheckInFormSection: React.FC<CheckInFormSectionProps> = ({
               <Button 
                 variant="outline"
                 onClick={() => setShowTagsDialog(true)}
+                disabled={!medicalCheckComplete}
               >
                 <Tag className="h-4 w-4 mr-2" />
                 Generează etichete
