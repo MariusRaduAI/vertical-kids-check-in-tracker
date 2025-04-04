@@ -13,7 +13,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import EmergencyContacts from "./EmergencyContacts";
 
 const TopBar: React.FC = () => {
   const today = new Date();
@@ -23,11 +22,11 @@ const TopBar: React.FC = () => {
   const isToday = today.getDay() === 0;
 
   return (
-    <header className="h-14 md:h-16 border-b px-3 md:px-6 flex items-center justify-between">
-      <div className="flex items-center gap-2 md:gap-4">
+    <header className="h-16 border-b px-6 flex items-center justify-between">
+      <div className="flex items-center gap-4">
         <SidebarTrigger className="lg:hidden" />
         <div>
-          <h2 className="text-sm md:text-base font-medium truncate">{formattedDate}</h2>
+          <h2 className="font-medium">{formattedDate}</h2>
           {isToday ? (
             <p className="text-xs text-primary font-medium">Astăzi este duminică!</p>
           ) : (
@@ -38,23 +37,22 @@ const TopBar: React.FC = () => {
         </div>
       </div>
 
-      <div className="flex items-center gap-1 md:gap-2">
-        <EmergencyContacts />
-        <Button variant="ghost" size="icon" className="h-8 w-8 md:h-9 md:w-9">
-          <HelpCircle className="h-4 w-4 md:h-5 md:w-5" />
+      <div className="flex items-center gap-2">
+        <Button variant="ghost" size="icon">
+          <HelpCircle className="h-5 w-5" />
         </Button>
-        <Button variant="ghost" size="icon" className="h-8 w-8 md:h-9 md:w-9">
-          <Bell className="h-4 w-4 md:h-5 md:w-5" />
+        <Button variant="ghost" size="icon">
+          <Bell className="h-5 w-5" />
         </Button>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="rounded-full h-8 w-8 md:h-9 md:w-9">
-              <Avatar className="h-7 w-7 md:h-8 md:w-8">
-                <AvatarFallback className="bg-primary text-white text-xs md:text-sm">AD</AvatarFallback>
+            <Button variant="ghost" size="icon" className="rounded-full">
+              <Avatar className="h-8 w-8">
+                <AvatarFallback className="bg-primary text-white">AD</AvatarFallback>
               </Avatar>
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-48">
+          <DropdownMenuContent align="end">
             <DropdownMenuLabel>Contul meu</DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuItem>Profil</DropdownMenuItem>
