@@ -6,7 +6,13 @@ interface MemberSearchProps {
   children: Child[];
 }
 
-const MemberSearch: React.FC<MemberSearchProps> = ({ children }) => {
+interface MemberSearchResult {
+  searchQuery: string;
+  setSearchQuery: React.Dispatch<React.SetStateAction<string>>;
+  filteredChildren: Child[];
+}
+
+const MemberSearch = ({ children }: MemberSearchProps): MemberSearchResult => {
   const [searchQuery, setSearchQuery] = useState("");
   
   const getFilteredChildren = () => {
@@ -29,7 +35,7 @@ const MemberSearch: React.FC<MemberSearchProps> = ({ children }) => {
 };
 
 export { MemberSearch };
-export type MemberSearchResult = ReturnType<typeof MemberSearch>;
+export type { MemberSearchResult };
 
 // Create a React component wrapper that can be used with React.memo
 const MemoizedMemberSearch: React.FC<MemberSearchProps & {
