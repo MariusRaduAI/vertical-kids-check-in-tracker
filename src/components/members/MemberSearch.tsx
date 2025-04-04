@@ -6,13 +6,7 @@ interface MemberSearchProps {
   children: Child[];
 }
 
-export interface MemberSearchResult {
-  searchQuery: string;
-  setSearchQuery: React.Dispatch<React.SetStateAction<string>>;
-  filteredChildren: Child[];
-}
-
-const MemberSearch = ({ children }: MemberSearchProps): MemberSearchResult => {
+const MemberSearch: React.FC<MemberSearchProps> = ({ children }) => {
   const [searchQuery, setSearchQuery] = useState("");
   
   const getFilteredChildren = () => {
@@ -34,6 +28,22 @@ const MemberSearch = ({ children }: MemberSearchProps): MemberSearchResult => {
   };
 };
 
-// This is needed because TypeScript expects a React component to return JSX
-const MemoizedMemberSearch = React.memo(MemberSearch) as unknown as React.FC<MemberSearchProps>;
-export default MemoizedMemberSearch;
+export { MemberSearch };
+export type MemberSearchResult = ReturnType<typeof MemberSearch>;
+
+// Create a React component wrapper that can be used with React.memo
+const MemoizedMemberSearch: React.FC<MemberSearchProps & {
+  onSearchResultsChange?: (results: MemberSearchResult) => void
+}> = (props) => {
+  const results = MemberSearch(props);
+  
+  React.useEffect(() => {
+    if (props.onSearchResultsChange) {
+      props.onSearchResultsChange(results);
+    }
+  }, [results, props.onSearchResultsChange]);
+  
+  return null; // This component doesn't render anything
+};
+
+export default React.memo(MemoizedMemberSearch);

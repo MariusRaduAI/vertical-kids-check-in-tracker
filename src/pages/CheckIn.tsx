@@ -64,7 +64,6 @@ const CheckIn: React.FC = () => {
         </div>
 
         <div className="space-y-4 md:space-y-6">
-          {/* UpcomingSundayBirthdays moved above Stats as requested */}
           <UpcomingSundayBirthdays children={children} weekCount={4} />
           
           <Stats 

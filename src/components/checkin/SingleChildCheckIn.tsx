@@ -120,9 +120,9 @@ const SingleChildCheckIn: React.FC<SingleChildCheckInProps> = ({
                 <div key={sibling.id} className="flex items-center gap-2">
                   <Checkbox 
                     id={`sibling-${sibling.id}`}
-                    onChange={(e) => {
+                    onCheckedChange={(checked) => {
                       if (onSiblingSelect) {
-                        onSiblingSelect(sibling.id, e.target.checked);
+                        onSiblingSelect(sibling.id, checked === true);
                       }
                     }}
                   />
