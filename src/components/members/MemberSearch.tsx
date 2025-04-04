@@ -6,13 +6,13 @@ interface MemberSearchProps {
   children: Child[];
 }
 
-interface MemberSearchResult {
+export interface MemberSearchResult {
   searchQuery: string;
   setSearchQuery: React.Dispatch<React.SetStateAction<string>>;
   filteredChildren: Child[];
 }
 
-const MemberSearch: React.FC<MemberSearchProps> = ({ children }): MemberSearchResult => {
+const MemberSearch = ({ children }: MemberSearchProps): MemberSearchResult => {
   const [searchQuery, setSearchQuery] = useState("");
   
   const getFilteredChildren = () => {
@@ -34,4 +34,6 @@ const MemberSearch: React.FC<MemberSearchProps> = ({ children }): MemberSearchRe
   };
 };
 
-export default MemberSearch;
+// This is needed because TypeScript expects a React component to return JSX
+const MemoizedMemberSearch = React.memo(MemberSearch) as unknown as React.FC<MemberSearchProps>;
+export default MemoizedMemberSearch;

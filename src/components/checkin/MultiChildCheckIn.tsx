@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useState } from "react";
 import { Child } from "@/types/models";
 import { Users, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -15,8 +15,9 @@ import CategoryBadge from "@/components/common/CategoryBadge";
 import NewChildBadge from "@/components/common/NewChildBadge";
 import { AbsenceWarningBadge } from "@/components/common/SiblingBadge";
 import LiveTagPreview from "./LiveTagPreview";
+import { useApp } from "@/context/AppContext";
 
-interface ChildCheckInState {
+export interface ChildCheckInState {
   childId: string;
   selected: boolean;
   program: "P1" | "P2" | "Both";
@@ -25,24 +26,73 @@ interface ChildCheckInState {
 
 interface MultiChildCheckInProps {
   children: Child[];
-  childrenToCheckIn: ChildCheckInState[];
-  updateChildCheckInState: (
+  childrenToCheckIn?: ChildCheckInState[];
+  updateChildCheckInState?: (
     childId: string,
     field: keyof ChildCheckInState,
     value: any
   ) => void;
+  onCheckInComplete?: () => void;
 }
 
 const MultiChildCheckIn: React.FC<MultiChildCheckInProps> = ({ 
   children, 
-  childrenToCheckIn,
-  updateChildCheckInState
+  childrenToCheckIn: propChildrenToCheckIn,
+  updateChildCheckInState: propUpdateChildCheckInState,
+  onCheckInComplete
 }) => {
+  const { checkInChild } = useApp();
+  
+  // Initialize state if props not provided
+  const [internalChildrenToCheckIn, setInternalChildrenToCheckIn] = useState<ChildCheckInState[]>(() => 
+    children.map(child => ({
+      childId: child.id,
+      selected: true,
+      program: "P1",
+      medicalCheckComplete: false
+    }))
+  );
+  
+  // Determine if we're using internal or prop-based state
+  const childrenToCheckIn = propChildrenToCheckIn || internalChildrenToCheckIn;
+  
+  // Update function that works with either prop or internal state
+  const updateChildCheckInState = (childId: string, field: keyof ChildCheckInState, value: any) => {
+    if (propUpdateChildCheckInState) {
+      propUpdateChildCheckInState(childId, field, value);
+    } else {
+      setInternalChildrenToCheckIn(prev => 
+        prev.map(child => 
+          child.childId === childId ? { ...child, [field]: value } : child
+        )
+      );
+    }
+  };
+
   const toggleSelectAll = () => {
     const allSelected = childrenToCheckIn.every(c => c.selected);
     childrenToCheckIn.forEach(child => {
       updateChildCheckInState(child.childId, 'selected', !allSelected);
     });
+  };
+  
+  // Handle the check-in process for all selected children
+  const handleCheckInAll = () => {
+    const selectedChildren = childrenToCheckIn.filter(c => c.selected && c.medicalCheckComplete);
+    
+    selectedChildren.forEach(childState => {
+      const programsToCheckIn = childState.program === "Both" ? ["P1", "P2"] : [childState.program];
+      
+      programsToCheckIn.forEach(program => {
+        checkInChild(
+          childState.childId,
+          program as "P1" | "P2",
+          { temperature: true, noSymptoms: true, goodCondition: true }
+        );
+      });
+    });
+    
+    if (onCheckInComplete) onCheckInComplete();
   };
 
   const renderChildCheckInItem = (childId: string, index: number) => {
@@ -147,6 +197,11 @@ const MultiChildCheckIn: React.FC<MultiChildCheckInProps> = ({
     );
   };
 
+  const anySelected = childrenToCheckIn.some(c => c.selected);
+  const allMedicalChecksComplete = childrenToCheckIn
+    .filter(c => c.selected)
+    .every(c => c.medicalCheckComplete);
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -166,6 +221,18 @@ const MultiChildCheckIn: React.FC<MultiChildCheckInProps> = ({
       
       {childrenToCheckIn.map((child, index) => 
         renderChildCheckInItem(child.childId, index)
+      )}
+      
+      {anySelected && (
+        <div className="flex justify-end mt-6">
+          <Button 
+            onClick={handleCheckInAll}
+            disabled={!allMedicalChecksComplete}
+            className="bg-green-600 hover:bg-green-700"
+          >
+            Înregistrează prezența pentru {childrenToCheckIn.filter(c => c.selected).length} copii
+          </Button>
+        </div>
       )}
     </div>
   );
