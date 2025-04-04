@@ -1,6 +1,7 @@
 
 import React, { useState } from "react";
 import { useApp } from "@/context/AppContext";
+import { Child, AgeGroup } from "@/types/models";
 import PageHeader from "@/components/common/PageHeader";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -9,7 +10,6 @@ import NewChildForm from "@/components/checkin/NewChildForm";
 import SingleChildCheckIn from "@/components/checkin/SingleChildCheckIn";
 import MultiChildCheckIn from "@/components/checkin/MultiChildCheckIn";
 import TagsDialog from "@/components/checkin/TagsDialog";
-import { Child } from "@/types/models";
 import Stats from "@/components/checkin/Stats";
 import UpcomingSundayBirthdays from "@/components/checkin/UpcomingSundayBirthdays";
 
@@ -26,7 +26,7 @@ const CheckIn: React.FC = () => {
   const [newChildData, setNewChildData] = useState({
     firstName: "",
     lastName: "",
-    ageGroup: "4-6" as const
+    ageGroup: "4-6" as AgeGroup
   });
 
   // Search functionality
@@ -85,6 +85,15 @@ const CheckIn: React.FC = () => {
     setActiveTab("search");
   };
 
+  // Handle updating newChildData
+  const handleNewChildDataChange = (data: {
+    firstName: string;
+    lastName: string;
+    ageGroup: AgeGroup;
+  }) => {
+    setNewChildData(data);
+  };
+
   // Get attendance summary
   const summary = getAttendanceSummaryForDate(currentSunday);
 
@@ -128,7 +137,7 @@ const CheckIn: React.FC = () => {
                 <TabsContent value="add-new" className="m-0">
                   <NewChildForm 
                     newChildData={newChildData}
-                    setNewChildData={setNewChildData}
+                    setNewChildData={handleNewChildDataChange}
                     onCreateNewChild={handleCreateNewChild}
                     onCancel={() => {
                       setIsNewChild(false);
@@ -141,7 +150,6 @@ const CheckIn: React.FC = () => {
                   {selectedChild && (
                     <SingleChildCheckIn
                       child={selectedChild}
-                      onPrintComplete={handlePrintComplete}
                     />
                   )}
                 </TabsContent>
@@ -149,7 +157,6 @@ const CheckIn: React.FC = () => {
                 <TabsContent value="multi-checkin" className="m-0">
                   <MultiChildCheckIn
                     children={selectedChildren.length > 0 ? selectedChildren : selectedChild ? [selectedChild] : []}
-                    onPrintComplete={handlePrintComplete}
                   />
                 </TabsContent>
               </CardContent>

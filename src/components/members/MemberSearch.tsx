@@ -1,13 +1,18 @@
 
 import React, { useState } from "react";
 import { Child } from "@/types/models";
-import MemberFilters from "./MemberFilters";
 
 interface MemberSearchProps {
   children: Child[];
 }
 
-const MemberSearch: React.FC<MemberSearchProps> = ({ children }) => {
+interface MemberSearchResult {
+  searchQuery: string;
+  setSearchQuery: React.Dispatch<React.SetStateAction<string>>;
+  filteredChildren: Child[];
+}
+
+const MemberSearch: React.FC<MemberSearchProps> = ({ children }): MemberSearchResult => {
   const [searchQuery, setSearchQuery] = useState("");
   
   const getFilteredChildren = () => {
