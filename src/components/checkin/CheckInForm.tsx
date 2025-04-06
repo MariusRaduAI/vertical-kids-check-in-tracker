@@ -1,14 +1,15 @@
-
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search } from "lucide-react";
-import { Tag } from "lucide-react";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import NewChildForm from "./NewChildForm";
 import SearchResults from "./SearchResults";
+import { Card } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
+import NewChildForm from "./NewChildForm";
+import { Child, ProgramType } from "@/types/models";
+import { AgeGroupBadge } from "../common/AgeGroupBadge";
+import { CategoryBadge } from "../common/CategoryBadge";
+import { NewChildBadge } from "../common/NewChildBadge";
 import ChildProgramSelection from "./ChildProgramSelection";
-import { Child } from "@/types/models";
 import { NewChildFormData } from "@/types/checkin";
 
 interface CheckInFormProps {
@@ -18,8 +19,8 @@ interface CheckInFormProps {
   selectedChild: Child | null;
   isNewChild: boolean;
   setIsNewChild: (isNew: boolean) => void;
-  programSelection: string;
-  setProgramSelection: (program: any) => void;
+  programSelection: ProgramType;
+  setProgramSelection: (program: ProgramType) => void;
   newChildData: NewChildFormData;
   medicalCheckComplete: boolean;
   setMedicalCheckComplete: (complete: boolean) => void;
