@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import PageHeader from "@/components/common/PageHeader";
 import StatsCard from "@/components/dashboard/StatsCard";
@@ -61,7 +62,10 @@ const Dashboard = () => {
       
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
         <Card className="col-span-1 xl:col-span-2 p-4">
-          <PeriodSelector period={period} onChange={setPeriod} />
+          <PeriodSelector
+            value={period}
+            onValueChange={(value) => setPeriod(value as "week" | "month" | "quarter" | "year")}
+          />
           <AttendanceTrendsChart 
             data={chartsData.trendsData} 
             period={period}

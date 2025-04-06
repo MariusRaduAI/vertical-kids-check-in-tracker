@@ -1,120 +1,116 @@
-import React from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import SearchResults from "./SearchResults";
-import { Card } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
-import NewChildForm from "./NewChildForm";
-import { Child, ProgramType } from "@/types/models";
-import { AgeGroupBadge } from "../common/AgeGroupBadge";
-import { CategoryBadge } from "../common/CategoryBadge";
-import { NewChildBadge } from "../common/NewChildBadge";
-import ChildProgramSelection from "./ChildProgramSelection";
-import { NewChildFormData } from "@/types/checkin";
 
-interface CheckInFormProps {
-  searchQuery: string;
-  setSearchQuery: (query: string) => void;
-  searchResults: Child[];
-  selectedChild: Child | null;
-  isNewChild: boolean;
-  setIsNewChild: (isNew: boolean) => void;
-  programSelection: ProgramType;
-  setProgramSelection: (program: ProgramType) => void;
-  newChildData: NewChildFormData;
-  medicalCheckComplete: boolean;
-  setMedicalCheckComplete: (complete: boolean) => void;
-  handleSelectChild: (child: Child) => void;
-  handleNewChildClick: () => void;
-  handleCreateNewChild: () => void;
-  handleCheckIn: () => void;
-  handleReset: () => void;
-  handleUpdateNewChildData: (data: Partial<NewChildFormData>) => void;
-}
+import React from 'react';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { useCheckInForm } from '@/hooks/useCheckInForm';
+import SearchResults from './SearchResults';
+import ChildProgramSelection from './ChildProgramSelection';
+import TagDialog from './TagDialog';
+import AgeGroupBadge from '../common/AgeGroupBadge';
+import CategoryBadge from '../common/CategoryBadge';
+import NewChildBadge from '../common/NewChildBadge';
+import { Search, Tag } from 'lucide-react';
 
-const CheckInForm: React.FC<CheckInFormProps> = ({
-  searchQuery,
-  setSearchQuery,
-  searchResults,
-  selectedChild,
-  isNewChild,
-  setIsNewChild,
-  programSelection,
-  setProgramSelection,
-  newChildData,
-  medicalCheckComplete,
-  setMedicalCheckComplete,
-  handleSelectChild,
-  handleNewChildClick,
-  handleCreateNewChild,
-  handleCheckIn,
-  handleReset,
-  handleUpdateNewChildData
-}) => {
+const CheckInForm: React.FC = () => {
+  const {
+    searchQuery,
+    setSearchQuery,
+    selectedChild,
+    setSelectedChild,
+    searchResults,
+    program,
+    setProgram,
+    medicalCheck,
+    setMedicalCheck,
+    isTagDialogOpen,
+    setIsTagDialogOpen,
+    handleCheckIn,
+    handleKeyDown,
+    canCheckIn,
+  } = useCheckInForm();
+
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Check-in Copii</CardTitle>
-        <CardDescription>
-          Caută un copil după nume sau creează un nou profil
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="relative">
-          <div className="relative">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+    <div>
+      <Card className="mb-8">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-2xl">Check-In Copii</CardTitle>
+          <CardDescription>
+            Caută după nume și înregistrează prezența copiilor
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center border rounded-md px-3 mb-4 focus-within:ring-1 focus-within:ring-primary">
+            <Search className="h-5 w-5 text-muted-foreground mr-2" />
             <Input
-              type="search"
-              placeholder="Caută după nume..."
+              type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-8"
+              onKeyDown={handleKeyDown}
+              className="border-0 focus-visible:ring-0 p-0"
+              placeholder="Caută după nume..."
+              autoFocus
             />
           </div>
 
-          <SearchResults 
-            searchQuery={searchQuery}
-            searchResults={searchResults}
-            selectedChild={selectedChild}
-            isNewChild={isNewChild}
-            onSelectChild={handleSelectChild}
-            onNewChildClick={handleNewChildClick}
-          />
-        </div>
+          {searchResults.length > 0 && !selectedChild && (
+            <SearchResults
+              results={searchResults}
+              onSelect={setSelectedChild}
+            />
+          )}
 
-        {isNewChild && (
-          <NewChildForm 
-            formData={newChildData}
-            onChange={handleUpdateNewChildData}
-            onSubmit={handleCreateNewChild}
-            onCancel={() => setIsNewChild(false)}
-          />
-        )}
+          {selectedChild && (
+            <div className="space-y-4 py-2">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div>
+                  <h3 className="font-bold text-xl">{selectedChild.fullName}</h3>
+                  <div className="flex gap-1.5 mt-1.5 flex-wrap">
+                    <AgeGroupBadge ageGroup={selectedChild.ageGroup} />
+                    <CategoryBadge category={selectedChild.category} />
+                    {selectedChild.isNew && <NewChildBadge />}
+                  </div>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setSelectedChild(null)}
+                  className="self-start sm:self-center"
+                >
+                  Schimbă
+                </Button>
+              </div>
 
-        {selectedChild && (
-          <ChildProgramSelection 
-            selectedChild={selectedChild}
-            programSelection={programSelection}
-            onProgramChange={setProgramSelection}
-            medicalCheckComplete={medicalCheckComplete}
-            onMedicalCheckChange={setMedicalCheckComplete}
-            currentSunday={new Date().toISOString().split('T')[0]} // Placeholder, will be replaced by actual prop
-          />
-        )}
-      </CardContent>
-      <CardFooter className="flex justify-between">
-        <Button variant="outline" onClick={handleReset}>
-          Resetează
-        </Button>
-        <Button
-          onClick={handleCheckIn}
-          disabled={!selectedChild || !medicalCheckComplete}
-        >
-          <Tag className="mr-2 h-4 w-4" />
-          Generează Etichetă
-        </Button>
-      </CardFooter>
-    </Card>
+              <ChildProgramSelection
+                program={program}
+                onChange={setProgram}
+                medicalCheck={medicalCheck}
+                onMedicalCheckChange={setMedicalCheck}
+              />
+            </div>
+          )}
+        </CardContent>
+        <CardFooter className="flex justify-between">
+          <Button
+            onClick={() => setIsTagDialogOpen(true)}
+            variant="outline"
+            size="sm"
+            className="gap-1"
+          >
+            <Tag className="h-4 w-4" />
+            Printează Ecusonul
+          </Button>
+        </CardFooter>
+      </Card>
+
+      {isTagDialogOpen && selectedChild && (
+        <TagDialog
+          child={selectedChild}
+          open={isTagDialogOpen}
+          onClose={() => setIsTagDialogOpen(false)}
+        />
+      )}
+    </div>
   );
 };
 

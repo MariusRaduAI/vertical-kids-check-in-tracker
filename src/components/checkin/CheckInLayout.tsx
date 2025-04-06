@@ -1,115 +1,83 @@
 
-import React from "react";
-import CheckInForm from "./CheckInForm";
-import AttendanceStats from "./AttendanceStats";
-import UpcomingSundayBirthdays from "./UpcomingSundayBirthdays";
-import TagDialog from "./TagDialog";
-import { TagPreviewType } from "@/types/checkin";
-import { Child } from "@/types/models";
-import { NewChildFormData } from "@/types/checkin";
+import React from 'react';
+import { useApp } from '@/context/AppContext';
+import { format } from 'date-fns';
+import { ro } from 'date-fns/locale';
+import CheckInForm from './CheckInForm';
+import AttendanceStats from './AttendanceStats';
+import UpcomingSundayBirthdays from './UpcomingSundayBirthdays';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import NewChildForm from './NewChildForm';
 
-interface CheckInLayoutProps {
-  searchQuery: string;
-  setSearchQuery: (query: string) => void;
-  searchResults: Child[];
-  selectedChild: Child | null;
-  isNewChild: boolean;
-  setIsNewChild: (isNew: boolean) => void;
-  programSelection: string;
-  setProgramSelection: (program: any) => void;
-  newChildData: NewChildFormData;
-  medicalCheckComplete: boolean;
-  setMedicalCheckComplete: (complete: boolean) => void;
-  tagOpen: boolean;
-  setTagOpen: (open: boolean) => void;
-  tagCount: number;
-  setTagCount: (count: number) => void;
-  generatedTags: TagPreviewType[] | null;
-  todayStats: any;
-  todaySummary: any;
-  currentSunday: string;
-  children: Child[];
-  handleSelectChild: (child: Child) => void;
-  handleNewChildClick: () => void;
-  handleCreateNewChild: () => void;
-  handleCheckIn: () => void;
-  handlePrintTags: () => void;
-  handleReset: () => void;
-  handleUpdateNewChildData: (data: Partial<NewChildFormData>) => void;
-}
+const CheckInLayout: React.FC = () => {
+  const { currentSunday, children, getTotalPresentToday } = useApp();
+  const stats = getTotalPresentToday();
+  const formattedDate = format(new Date(currentSunday), "d MMMM yyyy", { locale: ro });
+  
+  // Find children with birthdays this Sunday
+  const birthdayChildren = children.filter(child => {
+    const birthDate = new Date(child.birthDate);
+    const currentSundayDate = new Date(currentSunday);
+    return (
+      birthDate.getDate() === currentSundayDate.getDate() &&
+      birthDate.getMonth() === currentSundayDate.getMonth()
+    );
+  });
 
-const CheckInLayout: React.FC<CheckInLayoutProps> = ({
-  searchQuery,
-  setSearchQuery,
-  searchResults,
-  selectedChild,
-  isNewChild,
-  setIsNewChild,
-  programSelection,
-  setProgramSelection,
-  newChildData,
-  medicalCheckComplete,
-  setMedicalCheckComplete,
-  tagOpen,
-  setTagOpen,
-  tagCount,
-  setTagCount,
-  generatedTags,
-  todayStats,
-  todaySummary,
-  currentSunday,
-  children,
-  handleSelectChild,
-  handleNewChildClick,
-  handleCreateNewChild,
-  handleCheckIn,
-  handlePrintTags,
-  handleReset,
-  handleUpdateNewChildData
-}) => {
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      <div className="lg:col-span-2">
-        <CheckInForm
-          searchQuery={searchQuery}
-          setSearchQuery={setSearchQuery}
-          searchResults={searchResults}
-          selectedChild={selectedChild}
-          isNewChild={isNewChild}
-          setIsNewChild={setIsNewChild}
-          programSelection={programSelection}
-          setProgramSelection={setProgramSelection}
-          newChildData={newChildData}
-          medicalCheckComplete={medicalCheckComplete}
-          setMedicalCheckComplete={setMedicalCheckComplete}
-          handleSelectChild={handleSelectChild}
-          handleNewChildClick={handleNewChildClick}
-          handleCreateNewChild={handleCreateNewChild}
-          handleCheckIn={handleCheckIn}
-          handleReset={handleReset}
-          handleUpdateNewChildData={handleUpdateNewChildData}
-        />
-      </div>
+    <div className="animate-fade-in">
+      <div className="flex flex-col lg:flex-row gap-8">
+        <div className="flex-1 space-y-8">
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg">
+                Check-In pentru {formattedDate}
+              </CardTitle>
+              <CardDescription>
+                Prezență curentă: {stats.total} copii ({stats.totalP1} la programul 1, {stats.totalP2} la programul 2)
+              </CardDescription>
+            </CardHeader>
+          </Card>
 
-      <div className="space-y-6">
-        <AttendanceStats 
-          currentSunday={currentSunday}
-          todayStats={todayStats}
-          todaySummary={todaySummary}
-        />
-        
-        <UpcomingSundayBirthdays children={children} weekCount={4} />
-      </div>
+          <Tabs defaultValue="check-in">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="check-in">Check-In Copii</TabsTrigger>
+              <TabsTrigger value="new-child">Copil Nou</TabsTrigger>
+            </TabsList>
+            <TabsContent value="check-in">
+              <CheckInForm />
+            </TabsContent>
+            <TabsContent value="new-child">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Adaugă Copil Nou</CardTitle>
+                  <CardDescription>
+                    Completează datele pentru a înregistra un copil nou
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <NewChildForm />
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
+        </div>
 
-      <TagDialog 
-        open={tagOpen}
-        onOpenChange={setTagOpen}
-        tags={generatedTags}
-        childName={selectedChild?.fullName}
-        tagCount={tagCount}
-        onTagCountChange={setTagCount}
-        onPrint={handlePrintTags}
-      />
+        <div className="lg:w-80 space-y-8">
+          <AttendanceStats 
+            totalChildren={stats.total}
+            totalP1={stats.totalP1}
+            totalP2={stats.totalP2}
+            newChildren={stats.newChildren}
+          />
+          
+          <UpcomingSundayBirthdays 
+            children={birthdayChildren} 
+            today={currentSunday}
+          />
+        </div>
+      </div>
     </div>
   );
 };

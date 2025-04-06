@@ -9,22 +9,32 @@ import {
 } from "@/components/ui/select";
 
 interface PeriodSelectorProps {
-  value: string;
-  onValueChange: (value: string) => void;
+  value?: string;
+  period?: "week" | "month" | "quarter" | "year";
+  onChange?: (value: string) => void;
+  onValueChange?: (value: string) => void;
 }
 
-const PeriodSelector: React.FC<PeriodSelectorProps> = ({ value, onValueChange }) => {
+const PeriodSelector: React.FC<PeriodSelectorProps> = ({ 
+  value, 
+  period, 
+  onChange, 
+  onValueChange 
+}) => {
+  // Use the appropriate props based on what's provided
+  const selectedValue = value || period || "month";
+  const handleChange = onValueChange || onChange || (() => {});
+
   return (
-    <Select value={value} onValueChange={onValueChange}>
+    <Select value={selectedValue} onValueChange={handleChange}>
       <SelectTrigger className="w-[180px]">
         <SelectValue placeholder="Perioada" />
       </SelectTrigger>
       <SelectContent>
-        <SelectItem value="current">Duminica curentă</SelectItem>
-        <SelectItem value="lastMonth">Ultima lună</SelectItem>
-        <SelectItem value="last3Months">Ultimele 3 luni</SelectItem>
-        <SelectItem value="last6Months">Ultimele 6 luni</SelectItem>
-        <SelectItem value="allTime">Tot timpul</SelectItem>
+        <SelectItem value="week">Săptămâna</SelectItem>
+        <SelectItem value="month">Luna</SelectItem>
+        <SelectItem value="quarter">Trimestrul</SelectItem>
+        <SelectItem value="year">Anul</SelectItem>
       </SelectContent>
     </Select>
   );
