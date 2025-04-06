@@ -27,8 +27,7 @@ const NewChildForm: React.FC<NewChildFormProps> = ({
   onCancel 
 }) => {
   return (
-    <div className="space-y-4 border rounded-md p-4 mt-4">
-      <h3 className="font-medium">Adaugă copil nou</h3>
+    <div className="space-y-4">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label htmlFor="firstName">Prenume</Label>

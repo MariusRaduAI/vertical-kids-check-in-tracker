@@ -12,7 +12,7 @@ interface SearchResultsProps {
   searchResults: Child[];
   selectedChild: Child | null;
   isNewChild: boolean;
-  onSelectChild: (child: Child) => void;
+  onSelectChild: (child: Child | null) => void;
   onNewChildClick: () => void;
 }
 

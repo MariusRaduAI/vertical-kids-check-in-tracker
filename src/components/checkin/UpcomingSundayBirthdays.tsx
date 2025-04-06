@@ -1,96 +1,56 @@
 
 import React from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { format, nextSunday, addWeeks, parseISO, isSameDay } from "date-fns";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Child } from "@/types/models";
-import { Calendar, Gift } from "lucide-react";
+import { format } from "date-fns";
+import { ro } from "date-fns/locale";
+import { Cake } from "lucide-react";
+import AgeGroupBadge from "../common/AgeGroupBadge";
 
 interface UpcomingSundayBirthdaysProps {
-  children: Child[];
-  weekCount?: number;
+  birthdayChildren: Child[];
+  currentDate: string;
 }
 
 const UpcomingSundayBirthdays: React.FC<UpcomingSundayBirthdaysProps> = ({ 
-  children, 
-  weekCount = 4 
+  birthdayChildren,
+  currentDate
 }) => {
-  const today = new Date();
-  const upcomingSundays: Date[] = [];
-  
-  // Get the next few Sundays
-  let sunday = nextSunday(today);
-  upcomingSundays.push(sunday);
-  
-  for (let i = 1; i < weekCount; i++) {
-    sunday = nextSunday(addWeeks(sunday, 0));
-    upcomingSundays.push(sunday);
-  }
-  
-  // Find children with birthdays on these Sundays
-  const birthdaysByDate = upcomingSundays.map(sunday => {
-    const childrenWithBirthday = children.filter(child => {
-      const birthDate = parseISO(child.birthDate);
-      const thisYearBirthday = new Date(
-        today.getFullYear(),
-        birthDate.getMonth(),
-        birthDate.getDate()
-      );
-      
-      // Check if birthday falls on this Sunday
-      return isSameDay(sunday, thisYearBirthday);
-    });
-    
-    return {
-      date: sunday,
-      children: childrenWithBirthday
-    };
-  }).filter(date => date.children.length > 0);
-  
-  if (birthdaysByDate.length === 0) {
-    return (
-      <Card className="bg-muted/50">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium flex items-center gap-2">
-            <Gift className="h-4 w-4 text-primary" />
-            Aniversări pe Duminici
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm text-muted-foreground">Nu există aniversări în următoarele {weekCount} duminici.</p>
-        </CardContent>
-      </Card>
-    );
-  }
-  
   return (
-    <Card className="bg-muted/50">
-      <CardHeader className="pb-2">
-        <CardTitle className="text-sm font-medium flex items-center gap-2">
-          <Gift className="h-4 w-4 text-primary" />
-          Aniversări pe Duminici
-        </CardTitle>
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-lg">Aniversări Astăzi</CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4">
-        {birthdaysByDate.map((birthday, index) => (
-          <div key={index} className="p-3 rounded-md bg-primary/10 border border-primary/20">
-            <div className="flex items-center gap-2 mb-1">
-              <Calendar className="h-4 w-4 text-primary" />
-              <span className="text-sm font-medium">
-                {format(birthday.date, "d MMMM")}
-              </span>
-            </div>
-            <div className="space-y-1">
-              {birthday.children.map(child => (
-                <div key={child.id} className="flex justify-between items-center">
-                  <div className="text-sm">{child.fullName}</div>
-                  <div className="text-xs px-2 py-1 bg-primary text-white rounded-full">
-                    {child.age + 1} ani
+      <CardContent>
+        {birthdayChildren.length === 0 ? (
+          <div className="text-sm text-muted-foreground">
+            Niciun copil nu își sărbătorește ziua de naștere astăzi.
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {birthdayChildren.map((child) => {
+              // Calculate the age the child is turning today
+              const birthDate = new Date(child.birthDate);
+              const today = new Date(currentDate);
+              const age = today.getFullYear() - birthDate.getFullYear();
+              
+              return (
+                <div key={child.id} className="flex items-start space-x-2 p-2 rounded-md bg-muted/50">
+                  <Cake className="h-5 w-5 text-pink-500 mt-0.5" />
+                  <div>
+                    <div className="font-medium">{child.fullName}</div>
+                    <div className="flex items-center gap-2 mt-1">
+                      <AgeGroupBadge ageGroup={child.ageGroup} />
+                      <span className="text-xs bg-pink-100 text-pink-800 rounded-full px-2 py-0.5">
+                        {age} ani
+                      </span>
+                    </div>
                   </div>
                 </div>
-              ))}
-            </div>
+              );
+            })}
           </div>
-        ))}
+        )}
       </CardContent>
     </Card>
   );

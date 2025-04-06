@@ -12,10 +12,8 @@ import UpcomingBirthdays from "@/components/dashboard/UpcomingBirthdays";
 import { Card } from "@/components/ui/card";
 import { useApp } from "@/context/AppContext";
 import { getMockChartsData } from "@/utils/dashboardUtils";
+import { AgeGroup } from "@/types/models";
 
-// Fix StatsCard usage and other components with proper props
-
-// Inside the Dashboard component, update the StatsCard and chart components usage:
 const Dashboard = () => {
   const { children } = useApp();
   const [period, setPeriod] = useState<"week" | "month" | "quarter" | "year">("month");
@@ -23,6 +21,13 @@ const Dashboard = () => {
   // Get mock data for charts
   const chartsData = getMockChartsData(period);
   
+  // Convert topChildren data to match the expected type
+  const typedTopChildren = chartsData.topChildren.map(child => ({
+    ...child,
+    ageGroup: child.ageGroup as AgeGroup,
+    category: child.category as 'Membru' | 'Guest'
+  }));
+
   return (
     <div className="animate-fade-in space-y-6">
       <PageHeader
@@ -63,7 +68,7 @@ const Dashboard = () => {
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
         <Card className="col-span-1 xl:col-span-2 p-4">
           <PeriodSelector
-            value={period}
+            period={period}
             onValueChange={(value) => setPeriod(value as "week" | "month" | "quarter" | "year")}
           />
           <AttendanceTrendsChart 
@@ -90,7 +95,7 @@ const Dashboard = () => {
         
         <Card className="p-4">
           <TopChildrenList 
-            data={chartsData.topChildren}
+            data={typedTopChildren}
             title="Top Prezențe"
             description="Copii cu cele mai multe prezențe"
           />

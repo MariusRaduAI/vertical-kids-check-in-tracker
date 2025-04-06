@@ -9,9 +9,18 @@ import UpcomingSundayBirthdays from './UpcomingSundayBirthdays';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import NewChildForm from './NewChildForm';
+import { useCheckInForm } from '@/hooks/useCheckInForm';
 
 const CheckInLayout: React.FC = () => {
   const { currentSunday, children, getTotalPresentToday } = useApp();
+  const {
+    newChildData,
+    handleUpdateNewChildData,
+    handleCreateNewChild,
+    isNewChild,
+    setIsNewChild
+  } = useCheckInForm();
+  
   const stats = getTotalPresentToday();
   const formattedDate = format(new Date(currentSunday), "d MMMM yyyy", { locale: ro });
   
@@ -57,7 +66,12 @@ const CheckInLayout: React.FC = () => {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <NewChildForm />
+                  <NewChildForm 
+                    formData={newChildData}
+                    onChange={handleUpdateNewChildData}
+                    onSubmit={handleCreateNewChild}
+                    onCancel={() => setIsNewChild(false)}
+                  />
                 </CardContent>
               </Card>
             </TabsContent>
@@ -66,15 +80,15 @@ const CheckInLayout: React.FC = () => {
 
         <div className="lg:w-80 space-y-8">
           <AttendanceStats 
-            totalChildren={stats.total}
-            totalP1={stats.totalP1}
-            totalP2={stats.totalP2}
-            newChildren={stats.newChildren}
+            p1Count={stats.totalP1}
+            p2Count={stats.totalP2}
+            total={stats.total}
+            newCount={stats.newChildren}
           />
           
           <UpcomingSundayBirthdays 
-            children={birthdayChildren} 
-            today={currentSunday}
+            birthdayChildren={birthdayChildren} 
+            currentDate={currentSunday}
           />
         </div>
       </div>

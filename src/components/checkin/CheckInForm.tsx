@@ -7,27 +7,28 @@ import { useCheckInForm } from '@/hooks/useCheckInForm';
 import SearchResults from './SearchResults';
 import ChildProgramSelection from './ChildProgramSelection';
 import TagDialog from './TagDialog';
-import AgeGroupBadge from '../common/AgeGroupBadge';
-import CategoryBadge from '../common/CategoryBadge';
-import NewChildBadge from '../common/NewChildBadge';
 import { Search, Tag } from 'lucide-react';
 
 const CheckInForm: React.FC = () => {
   const {
     searchQuery,
     setSearchQuery,
-    selectedChild,
-    setSelectedChild,
     searchResults,
-    program,
-    setProgram,
-    medicalCheck,
-    setMedicalCheck,
-    isTagDialogOpen,
-    setIsTagDialogOpen,
+    selectedChild,
+    isNewChild,
+    programSelection,
+    setProgramSelection,
+    medicalCheckComplete,
+    setMedicalCheckComplete,
+    tagOpen,
+    setTagOpen,
+    generatedTags,
+    tagCount,
+    setTagCount,
+    handleSelectChild,
+    handleNewChildClick,
     handleCheckIn,
-    handleKeyDown,
-    canCheckIn,
+    currentSunday
   } = useCheckInForm();
 
   return (
@@ -46,17 +47,20 @@ const CheckInForm: React.FC = () => {
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              onKeyDown={handleKeyDown}
               className="border-0 focus-visible:ring-0 p-0"
               placeholder="Caută după nume..."
               autoFocus
             />
           </div>
 
-          {searchResults.length > 0 && !selectedChild && (
+          {searchResults.length > 0 && !selectedChild && !isNewChild && (
             <SearchResults
-              results={searchResults}
-              onSelect={setSelectedChild}
+              searchQuery={searchQuery}
+              searchResults={searchResults}
+              selectedChild={selectedChild}
+              isNewChild={isNewChild}
+              onSelectChild={handleSelectChild}
+              onNewChildClick={handleNewChildClick}
             />
           )}
 
@@ -65,16 +69,11 @@ const CheckInForm: React.FC = () => {
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                 <div>
                   <h3 className="font-bold text-xl">{selectedChild.fullName}</h3>
-                  <div className="flex gap-1.5 mt-1.5 flex-wrap">
-                    <AgeGroupBadge ageGroup={selectedChild.ageGroup} />
-                    <CategoryBadge category={selectedChild.category} />
-                    {selectedChild.isNew && <NewChildBadge />}
-                  </div>
                 </div>
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => setSelectedChild(null)}
+                  onClick={() => handleSelectChild(null)}
                   className="self-start sm:self-center"
                 >
                   Schimbă
@@ -82,32 +81,37 @@ const CheckInForm: React.FC = () => {
               </div>
 
               <ChildProgramSelection
-                program={program}
-                onChange={setProgram}
-                medicalCheck={medicalCheck}
-                onMedicalCheckChange={setMedicalCheck}
+                selectedChild={selectedChild}
+                programSelection={programSelection}
+                onProgramChange={setProgramSelection}
+                medicalCheckComplete={medicalCheckComplete}
+                onMedicalCheckChange={setMedicalCheckComplete}
+                currentSunday={currentSunday}
               />
             </div>
           )}
         </CardContent>
         <CardFooter className="flex justify-between">
           <Button
-            onClick={() => setIsTagDialogOpen(true)}
-            variant="outline"
-            size="sm"
-            className="gap-1"
+            onClick={handleCheckIn}
+            disabled={!selectedChild || !medicalCheckComplete}
+            variant="default"
+            className="ml-auto"
           >
-            <Tag className="h-4 w-4" />
-            Printează Ecusonul
+            Check-In
           </Button>
         </CardFooter>
       </Card>
 
-      {isTagDialogOpen && selectedChild && (
+      {tagOpen && generatedTags && (
         <TagDialog
-          child={selectedChild}
-          open={isTagDialogOpen}
-          onClose={() => setIsTagDialogOpen(false)}
+          open={tagOpen}
+          onOpenChange={setTagOpen}
+          tags={generatedTags}
+          childName={selectedChild?.fullName}
+          tagCount={tagCount}
+          onTagCountChange={setTagCount}
+          onPrint={handleCheckIn}
         />
       )}
     </div>

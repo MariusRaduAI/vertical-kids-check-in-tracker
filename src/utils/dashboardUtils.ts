@@ -1,7 +1,6 @@
 import { format, parseISO, subMonths } from "date-fns";
-import { Attendance, AttendanceSummary, Child } from "@/types/models";
+import { Attendance, AttendanceSummary, Child, AgeGroup } from "@/types/models";
 
-// Determine visible Sundays based on the selected period
 export const getVisibleSundays = (
   period: string, 
   currentSunday: string, 
@@ -12,7 +11,6 @@ export const getVisibleSundays = (
   
   switch (period) {
     case "current":
-      // Only the current Sunday
       return [currentSunday];
     case "lastMonth":
       startDate = subMonths(today, 1);
@@ -31,13 +29,11 @@ export const getVisibleSundays = (
       return [currentSunday];
   }
   
-  // Filter sundays
   return Object.keys(summaries)
     .filter(date => parseISO(date) >= startDate)
     .sort((a, b) => parseISO(a).getTime() - parseISO(b).getTime());
 };
 
-// Calculate monthly attendance
 export const getMonthlyAttendance = (
   visibleSundays: string[], 
   summaries: Record<string, AttendanceSummary>
@@ -67,7 +63,6 @@ export const getMonthlyAttendance = (
   return Object.values(monthlyData);
 };
 
-// Calculate average attendance for specific dates
 export const getAverageAttendance = (
   visibleSundays: string[], 
   summaries: Record<string, AttendanceSummary>
@@ -83,7 +78,6 @@ export const getAverageAttendance = (
   });
 };
 
-// Calculate attendance by category
 export const getAttendanceByCategory = (
   visibleSundays: string[], 
   summaries: Record<string, AttendanceSummary>
@@ -103,7 +97,6 @@ export const getAttendanceByCategory = (
   ];
 };
 
-// Calculate attendance by age group
 export const getAttendanceByAgeGroup = (
   visibleSundays: string[], 
   summaries: Record<string, AttendanceSummary>
@@ -130,7 +123,6 @@ export const getAttendanceByAgeGroup = (
   }));
 };
 
-// Get top 20 most present children
 export const getTopPresentChildren = (
   visibleSundays: string[], 
   attendance: Attendance[], 
@@ -138,14 +130,12 @@ export const getTopPresentChildren = (
 ) => {
   const childAttendance = new Map<string, number>();
   
-  // Count attendance for each child
   attendance.filter(a => visibleSundays.includes(a.date) && a.status === 'P')
     .forEach(a => {
       const count = childAttendance.get(a.childId) || 0;
       childAttendance.set(a.childId, count + 1);
     });
   
-  // Convert to array and sort
   const sortedChildren = Array.from(childAttendance.entries())
     .map(([childId, count]) => {
       const child = children.find(c => c.id === childId);
@@ -163,28 +153,24 @@ export const getTopPresentChildren = (
   return sortedChildren;
 };
 
-// Get top 20 most absent children
 export const getTopAbsentChildren = (
   visibleSundays: string[], 
   attendance: Attendance[], 
   children: Child[]
 ) => {
-  const maxAttendance = visibleSundays.length * 2; // P1 and P2 for each Sunday
+  const maxAttendance = visibleSundays.length * 2;
   const childAttendance = new Map<string, number>();
   
-  // Initialize all children with 0 attendance
   children.forEach(child => {
     childAttendance.set(child.id, 0);
   });
   
-  // Count attendance for each child
   attendance.filter(a => visibleSundays.includes(a.date) && a.status === 'P')
     .forEach(a => {
       const count = childAttendance.get(a.childId) || 0;
       childAttendance.set(a.childId, count + 1);
     });
   
-  // Convert to array and calculate absences
   const childrenWithAbsences = Array.from(childAttendance.entries())
     .map(([childId, presentCount]) => {
       const child = children.find(c => c.id === childId);
@@ -196,14 +182,13 @@ export const getTopAbsentChildren = (
         category: child?.category || 'Guest'
       };
     })
-    .filter(c => c.absences > 0) // Only include children with absences
+    .filter(c => c.absences > 0)
     .sort((a, b) => b.absences - a.absences)
     .slice(0, 20);
   
   return childrenWithAbsences;
 };
 
-// Get attendance trends (for the recent Sundays)
 export const getAttendanceTrends = (summaries: Record<string, AttendanceSummary>, count = 5) => {
   const recentSundays = Object.keys(summaries)
     .sort((a, b) => new Date(b).getTime() - new Date(a).getTime())
@@ -221,105 +206,63 @@ export const getAttendanceTrends = (summaries: Record<string, AttendanceSummary>
   });
 };
 
-// Mock data generator for dashboard charts
 export const getMockChartsData = (period: "week" | "month" | "quarter" | "year") => {
-  // Generate mock data based on the selected period
-  const trendsData = generateMockTrendsData(period);
-  const ageGroupData = generateMockAgeGroupData(period);
-  const categoryData = generateMockCategoryData();
-  const topChildren = generateMockTopChildren();
-  
+  const trendsData = period === "week" 
+    ? [
+        { date: "Duminică", P1: 35, P2: 28, total: 63 },
+        { date: "Duminica Trecută", P1: 32, P2: 25, total: 57 },
+        { date: "2 Săpt. în urmă", P1: 30, P2: 23, total: 53 },
+        { date: "3 Săpt. în urmă", P1: 33, P2: 26, total: 59 },
+      ]
+    : period === "month"
+    ? [
+        { month: "Aprilie", P1: 140, P2: 105, total: 245 },
+        { month: "Martie", P1: 125, P2: 95, total: 220 },
+        { month: "Februarie", P1: 120, P2: 90, total: 210 },
+        { month: "Ianuarie", P1: 130, P2: 100, total: 230 },
+      ]
+    : period === "quarter"
+    ? [
+        { month: "Q1 2025", P1: 380, P2: 290, total: 670 },
+        { month: "Q4 2024", P1: 365, P2: 275, total: 640 },
+        { month: "Q3 2024", P1: 320, P2: 250, total: 570 },
+        { month: "Q2 2024", P1: 350, P2: 270, total: 620 },
+      ]
+    : [
+        { month: "2025", P1: 1500, P2: 1200, total: 2700 },
+        { month: "2024", P1: 1400, P2: 1100, total: 2500 },
+        { month: "2023", P1: 1300, P2: 1000, total: 2300 },
+        { month: "2022", P1: 1100, P2: 900, total: 2000 },
+      ];
+
+  const ageGroupData = [
+    { name: "0-1", P1: 5, P2: 3, total: 8 },
+    { name: "1-2", P1: 8, P2: 6, total: 14 },
+    { name: "2-3", P1: 10, P2: 7, total: 17 },
+    { name: "4-6", P1: 15, P2: 12, total: 27 },
+    { name: "7-12", P1: 12, P2: 9, total: 21 },
+  ];
+
+  const categoryData = [
+    { name: "Membri", value: 65 },
+    { name: "Guests", value: 22 },
+  ];
+
+  const topChildren = [
+    { id: "1", name: "Ana Maria", count: 12, ageGroup: "4-6" as AgeGroup, category: "Membru" as "Membru" | "Guest" },
+    { id: "2", name: "Mihai Alexandru", count: 11, ageGroup: "7-12" as AgeGroup, category: "Membru" as "Membru" | "Guest" },
+    { id: "3", name: "Elena Cristina", count: 10, ageGroup: "4-6" as AgeGroup, category: "Membru" as "Membru" | "Guest" },
+    { id: "4", name: "Andrei Ioan", count: 9, ageGroup: "2-3" as AgeGroup, category: "Membru" as "Membru" | "Guest" },
+    { id: "5", name: "Maria Alexandra", count: 8, ageGroup: "4-6" as AgeGroup, category: "Guest" as "Membru" | "Guest" },
+    { id: "6", name: "David Stefan", count: 7, ageGroup: "7-12" as AgeGroup, category: "Membru" as "Membru" | "Guest" },
+    { id: "7", name: "Sofia Gabriela", count: 6, ageGroup: "4-6" as AgeGroup, category: "Guest" as "Membru" | "Guest" },
+    { id: "8", name: "Gabriel Nicolae", count: 5, ageGroup: "1-2" as AgeGroup, category: "Membru" as "Membru" | "Guest" },
+  ];
+
   return {
     trendsData,
     ageGroupData,
     categoryData,
     topChildren
   };
-};
-
-// Generate mock trends data based on period
-const generateMockTrendsData = (period: "week" | "month" | "quarter" | "year") => {
-  let data: { date: string; P1: number; P2: number; total: number; }[] = [];
-  
-  switch (period) {
-    case "week":
-      data = [
-        { date: "Luni", P1: 42, P2: 35, total: 77 },
-        { date: "Marți", P1: 38, P2: 32, total: 70 },
-        { date: "Miercuri", P1: 45, P2: 39, total: 84 },
-        { date: "Joi", P1: 39, P2: 30, total: 69 },
-        { date: "Vineri", P1: 47, P2: 41, total: 88 },
-        { date: "Sâmbătă", P1: 25, P2: 18, total: 43 },
-        { date: "Duminică", P1: 57, P2: 52, total: 109 }
-      ];
-      break;
-    case "month":
-      data = [
-        { date: "Săpt 1", P1: 57, P2: 52, total: 109 },
-        { date: "Săpt 2", P1: 54, P2: 48, total: 102 },
-        { date: "Săpt 3", P1: 59, P2: 51, total: 110 },
-        { date: "Săpt 4", P1: 53, P2: 49, total: 102 }
-      ];
-      break;
-    case "quarter":
-      data = [
-        { date: "Ian", P1: 220, P2: 198, total: 418 },
-        { date: "Feb", P1: 210, P2: 195, total: 405 },
-        { date: "Mar", P1: 230, P2: 210, total: 440 }
-      ];
-      break;
-    case "year":
-      data = [
-        { date: "Ian", P1: 220, P2: 198, total: 418 },
-        { date: "Feb", P1: 210, P2: 195, total: 405 },
-        { date: "Mar", P1: 230, P2: 210, total: 440 },
-        { date: "Apr", P1: 225, P2: 205, total: 430 },
-        { date: "Mai", P1: 235, P2: 215, total: 450 },
-        { date: "Iun", P1: 200, P2: 180, total: 380 },
-        { date: "Iul", P1: 180, P2: 160, total: 340 },
-        { date: "Aug", P1: 160, P2: 140, total: 300 },
-        { date: "Sep", P1: 210, P2: 190, total: 400 },
-        { date: "Oct", P1: 230, P2: 210, total: 440 },
-        { date: "Nov", P1: 240, P2: 220, total: 460 },
-        { date: "Dec", P1: 210, P2: 190, total: 400 }
-      ];
-      break;
-  }
-  
-  return data;
-};
-
-// Generate mock age group data
-const generateMockAgeGroupData = (period: "week" | "month" | "quarter" | "year") => {
-  return [
-    { name: "0-1", total: 12, P1: 7, P2: 5 },
-    { name: "1-2", total: 18, P1: 10, P2: 8 },
-    { name: "2-3", total: 25, P1: 14, P2: 11 },
-    { name: "4-6", total: 32, P1: 18, P2: 14 },
-    { name: "7-12", total: 28, P1: 15, P2: 13 }
-  ];
-};
-
-// Generate mock category data
-const generateMockCategoryData = () => {
-  return [
-    { name: "Membri", value: 75 },
-    { name: "Guests", value: 25 }
-  ];
-};
-
-// Generate mock top children data
-const generateMockTopChildren = () => {
-  return [
-    { id: "1", name: "Ana Maria", count: 12, ageGroup: "4-6", category: "Membru" },
-    { id: "2", name: "Mihai Ioan", count: 11, ageGroup: "7-12", category: "Membru" },
-    { id: "3", name: "Elena Cristina", count: 10, ageGroup: "2-3", category: "Membru" },
-    { id: "4", name: "Alexandru", count: 9, ageGroup: "4-6", category: "Membru" },
-    { id: "5", name: "Maria", count: 9, ageGroup: "1-2", category: "Membru" },
-    { id: "6", name: "Andrei", count: 8, ageGroup: "7-12", category: "Guest" },
-    { id: "7", name: "Sofia", count: 8, ageGroup: "2-3", category: "Membru" },
-    { id: "8", name: "David", count: 7, ageGroup: "4-6", category: "Membru" },
-    { id: "9", name: "Gabriela", count: 7, ageGroup: "1-2", category: "Guest" },
-    { id: "10", name: "Matei", count: 6, ageGroup: "0-1", category: "Membru" }
-  ];
 };

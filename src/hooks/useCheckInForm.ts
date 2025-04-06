@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+
+import { useState, useEffect, useCallback } from "react";
 import { useApp } from "@/context/AppContext";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
@@ -49,14 +50,16 @@ export const useCheckInForm = () => {
     }
   }, [searchQuery, searchChildren]);
 
-  const handleSelectChild = (child: Child) => {
+  const handleSelectChild = useCallback((child: Child | null) => {
     setSelectedChild(child);
-    setSearchQuery(child.fullName);
-    setSearchResults([]);
-    setIsNewChild(false);
-  };
+    if (child) {
+      setSearchQuery(child.fullName);
+      setSearchResults([]);
+      setIsNewChild(false);
+    }
+  }, []);
 
-  const handleNewChildClick = () => {
+  const handleNewChildClick = useCallback(() => {
     setIsNewChild(true);
     setSelectedChild(null);
     
@@ -74,9 +77,9 @@ export const useCheckInForm = () => {
         lastName: "",
       });
     }
-  };
+  }, [searchQuery, newChildData]);
 
-  const handleCreateNewChild = () => {
+  const handleCreateNewChild = useCallback(() => {
     if (!newChildData.firstName || !newChildData.lastName) {
       toast({
         title: "Eroare",
@@ -106,9 +109,9 @@ export const useCheckInForm = () => {
     setSelectedChild(newChild);
     setSearchQuery(fullName);
     setIsNewChild(false);
-  };
+  }, [addChild, newChildData, toast]);
 
-  const handleCheckIn = () => {
+  const handleCheckIn = useCallback(() => {
     if (!selectedChild) return;
 
     if (!medicalCheckComplete) {
@@ -172,9 +175,9 @@ export const useCheckInForm = () => {
         setTagOpen(true);
       }
     }
-  };
+  }, [selectedChild, medicalCheckComplete, programSelection, checkInChild, currentSunday, toast]);
 
-  const handlePrintTags = () => {
+  const handlePrintTags = useCallback(() => {
     const programInfo = programSelection === "Both" ? "ambele programe" : 
                       programSelection === "P1" ? "programul 1" : "programul 2";
     
@@ -187,19 +190,19 @@ export const useCheckInForm = () => {
     setSelectedChild(null);
     setSearchQuery("");
     setMedicalCheckComplete(false);
-  };
+  }, [programSelection, tagCount, generatedTags, selectedChild, toast]);
 
-  const handleReset = () => {
+  const handleReset = useCallback(() => {
     setSelectedChild(null);
     setSearchQuery("");
     setIsNewChild(false);
     setMedicalCheckComplete(false);
     setProgramSelection("P1");
-  };
+  }, []);
 
-  const handleUpdateNewChildData = (data: Partial<NewChildFormData>) => {
+  const handleUpdateNewChildData = useCallback((data: Partial<NewChildFormData>) => {
     setNewChildData(prev => ({ ...prev, ...data }));
-  };
+  }, []);
 
   return {
     searchQuery,
