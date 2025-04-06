@@ -1,429 +1,199 @@
-
-import React, { useState } from "react";
-import { useApp } from "@/context/AppContext";
+import React, { useState, useMemo } from "react";
 import PageHeader from "@/components/common/PageHeader";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { 
-  LineChart, 
-  Line, 
-  BarChart, 
-  Bar, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  Legend, 
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell
-} from "recharts";
-import { format, parseISO, subMonths, startOfMonth, endOfMonth } from "date-fns";
-import { Attendance, Child } from "@/types/models";
-import AgeGroupBadge from "@/components/common/AgeGroupBadge";
-import CategoryBadge from "@/components/common/CategoryBadge";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
+import { useApp } from "@/context/AppContext";
+import { format, subMonths, isAfter, parseISO } from "date-fns";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
+import { PieChart, Pie, Cell } from "recharts";
+import { AttendanceSummary } from "@/types/models";
+
+const periods = [
+  { value: "6m", label: "Ultimele 6 luni" },
+  { value: "3m", label: "Ultimele 3 luni" },
+  { value: "1m", label: "Ultima lună" },
+];
+
+const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
 
 const Analytics: React.FC = () => {
-  const { children, attendance, summaries } = useApp();
-  const [period, setPeriod] = useState("3months");
+  const { sundays, getAttendanceSummaryForDate } = useApp();
+  const [period, setPeriod] = useState("6m");
   
-  // Get relevant data based on period
-  const getVisibleSundays = () => {
-    const today = new Date();
-    let startDate;
+  // Filter sundays based on selected period
+  const filteredSundays = useMemo(() => {
+    const now = new Date();
+    const months = parseInt(period.replace("m", ""));
+    const cutoffDate = subMonths(now, months);
     
-    switch (period) {
-      case "1month":
-        startDate = subMonths(today, 1);
-        break;
-      case "3months":
-        startDate = subMonths(today, 3);
-        break;
-      case "6months":
-        startDate = subMonths(today, 6);
-        break;
-      case "12months":
-        startDate = subMonths(today, 12);
-        break;
-      default:
-        startDate = subMonths(today, 3);
-    }
-    
-    // Filter sundays
-    return Object.keys(summaries)
-      .filter(date => parseISO(date) >= startDate)
-      .sort((a, b) => parseISO(a).getTime() - parseISO(b).getTime());
-  };
+    return sundays.filter(sunday => {
+      const sundayDate = parseISO(sunday);
+      return isAfter(sundayDate, cutoffDate);
+    }).sort();
+  }, [sundays, period]);
   
-  const visibleSundays = getVisibleSundays();
-  
-  // Calculate monthly attendance
-  const getMonthlyAttendance = () => {
-    const monthlyData: Record<string, { month: string, total: number, P1: number, P2: number }> = {};
-    
-    visibleSundays.forEach(sunday => {
-      const date = parseISO(sunday);
-      const monthKey = format(date, 'yyyy-MM');
-      const monthLabel = format(date, 'MMM yyyy');
-      
-      if (!monthlyData[monthKey]) {
-        monthlyData[monthKey] = {
-          month: monthLabel,
-          total: 0,
-          P1: 0,
-          P2: 0
-        };
-      }
-      
-      const daySummary = summaries[sunday];
-      monthlyData[monthKey].total += daySummary.total;
-      monthlyData[monthKey].P1 += daySummary.totalP1;
-      monthlyData[monthKey].P2 += daySummary.totalP2;
-    });
-    
-    return Object.values(monthlyData);
-  };
-  
-  // Calculate average attendance
-  const getAverageAttendance = () => {
-    const data = visibleSundays.map(sunday => {
-      const summary = summaries[sunday];
+  // Prepare data for program attendance chart
+  const programAttendanceData = useMemo(() => {
+    return filteredSundays.map(sunday => {
+      const summary = getAttendanceSummaryForDate(sunday) as AttendanceSummary | undefined;
       return {
-        date: format(parseISO(sunday), 'dd MMM'),
-        total: summary.total,
-        P1: summary.totalP1,
-        P2: summary.totalP2
+        name: format(parseISO(sunday), "dd.MM"),
+        "Program 1": summary?.totalP1 || 0,
+        "Program 2": summary?.totalP2 || 0,
       };
     });
-    
-    return data;
-  };
+  }, [filteredSundays, getAttendanceSummaryForDate]);
   
-  // Calculate attendance by category
-  const getAttendanceByCategory = () => {
-    let membriTotal = 0;
-    let guestTotal = 0;
-    
-    visibleSundays.forEach(sunday => {
-      const summary = summaries[sunday];
-      membriTotal += summary.byCategory.Membru;
-      guestTotal += summary.byCategory.Guest;
-    });
-    
-    return [
-      { name: 'Membri', value: membriTotal },
-      { name: 'Guests', value: guestTotal }
-    ];
-  };
-  
-  // Calculate attendance by age group
-  const getAttendanceByAgeGroup = () => {
-    const ageGroups = {
-      '0-1': 0,
-      '1-2': 0,
-      '2-3': 0,
-      '4-6': 0,
-      '7-12': 0
+  // Prepare data for age group chart
+  const ageGroupData = useMemo(() => {
+    // Initialize with zeros
+    const aggregatedData = {
+      "0-1": 0,
+      "1-2": 0,
+      "2-3": 0,
+      "4-6": 0,
+      "7-12": 0
     };
     
-    visibleSundays.forEach(sunday => {
-      const summary = summaries[sunday];
-      
-      Object.entries(summary.byAgeGroup).forEach(([group, data]) => {
-        ageGroups[group as keyof typeof ageGroups] += data.total;
-      });
+    // Sum up all values from the period
+    filteredSundays.forEach(sunday => {
+      const summary = getAttendanceSummaryForDate(sunday) as AttendanceSummary | undefined;
+      if (summary && summary.byAgeGroup) {
+        Object.entries(summary.byAgeGroup).forEach(([ageGroup, data]) => {
+          if (data && typeof data === 'object' && 'total' in data) {
+            aggregatedData[ageGroup as keyof typeof aggregatedData] += data.total;
+          }
+        });
+      }
     });
     
-    return Object.entries(ageGroups).map(([group, total]) => ({
-      name: group,
-      total
+    // Convert to array format for PieChart
+    return Object.entries(aggregatedData).map(([name, value]) => ({
+      name,
+      value
     }));
-  };
+  }, [filteredSundays, getAttendanceSummaryForDate]);
   
-  // Calculate top 20 most present children
-  const getTopPresentChildren = () => {
-    const childAttendance = new Map<string, number>();
-    
-    // Count attendance for each child
-    attendance.filter(a => visibleSundays.includes(a.date) && a.status === 'P')
-      .forEach(a => {
-        const count = childAttendance.get(a.childId) || 0;
-        childAttendance.set(a.childId, count + 1);
-      });
-    
-    // Convert to array and sort
-    const sortedChildren = Array.from(childAttendance.entries())
-      .map(([childId, count]) => {
-        const child = children.find(c => c.id === childId);
-        return {
-          id: childId,
-          name: child?.fullName || 'Unknown',
-          count,
-          ageGroup: child?.ageGroup || '0-1',
-          category: child?.category || 'Guest'
-        };
-      })
-      .sort((a, b) => b.count - a.count)
-      .slice(0, 20);
-    
-    return sortedChildren;
-  };
-  
-  // Calculate top 20 most absent children
-  const getTopAbsentChildren = () => {
-    const maxAttendance = visibleSundays.length * 2; // P1 and P2 for each Sunday
-    const childAttendance = new Map<string, number>();
-    
-    // Initialize all children with 0 attendance
-    children.forEach(child => {
-      childAttendance.set(child.id, 0);
+  // Prepare data for new children trend
+  const newChildrenData = useMemo(() => {
+    return filteredSundays.map(sunday => {
+      const summary = getAttendanceSummaryForDate(sunday) as AttendanceSummary | undefined;
+      return {
+        name: format(parseISO(sunday), "dd.MM"),
+        "Copii noi": summary?.newChildrenCount || 0,
+      };
     });
-    
-    // Count attendance for each child
-    attendance.filter(a => visibleSundays.includes(a.date) && a.status === 'P')
-      .forEach(a => {
-        const count = childAttendance.get(a.childId) || 0;
-        childAttendance.set(a.childId, count + 1);
-      });
-    
-    // Convert to array and calculate absences
-    const childrenWithAbsences = Array.from(childAttendance.entries())
-      .map(([childId, presentCount]) => {
-        const child = children.find(c => c.id === childId);
-        return {
-          id: childId,
-          name: child?.fullName || 'Unknown',
-          absences: maxAttendance - presentCount,
-          ageGroup: child?.ageGroup || '0-1',
-          category: child?.category || 'Guest'
-        };
-      })
-      .filter(c => c.absences > 0) // Only include children with absences
-      .sort((a, b) => b.absences - a.absences)
-      .slice(0, 20);
-    
-    return childrenWithAbsences;
-  };
-  
-  const monthlyAttendance = getMonthlyAttendance();
-  const averageAttendance = getAverageAttendance();
-  const categoryData = getAttendanceByCategory();
-  const ageGroupData = getAttendanceByAgeGroup();
-  const topPresent = getTopPresentChildren();
-  const topAbsent = getTopAbsentChildren();
-  
-  const COLORS = ['#4a9af5', '#ff9f7f', '#64d887', '#a288e3', '#ffbb78'];
+  }, [filteredSundays, getAttendanceSummaryForDate]);
 
   return (
-    <div className="animate-fade-in">
+    <div className="space-y-6">
       <PageHeader
-        title="Dashboard & Analize"
-        description="Analiză detaliată a prezenței și tendințelor"
-        actions={
-          <Select value={period} onValueChange={setPeriod}>
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Perioada" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="1month">Ultima lună</SelectItem>
-              <SelectItem value="3months">Ultimele 3 luni</SelectItem>
-              <SelectItem value="6months">Ultimele 6 luni</SelectItem>
-              <SelectItem value="12months">Ultimul an</SelectItem>
-            </SelectContent>
-          </Select>
-        }
+        title="Analiza Participării"
+        description="Statistici detaliate despre participare și tendințe"
       />
       
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Prezență Lunară</CardTitle>
-            <CardDescription>
-              Total copii prezenți în fiecare lună
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="h-80">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={monthlyAttendance}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="month" />
-                <YAxis />
-                <Tooltip />
-                <Legend />
-                <Bar dataKey="P1" name="Program 1" fill="#6b5ecc" />
-                <Bar dataKey="P2" name="Program 2" fill="#4a9af5" />
-                <Bar dataKey="total" name="Total" fill="#5fd4ac" />
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader>
-            <CardTitle>Tendință Prezență</CardTitle>
-            <CardDescription>
-              Evoluția prezenței pe fiecare duminică
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="h-80">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={averageAttendance}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="date" />
-                <YAxis />
-                <Tooltip />
-                <Legend />
-                <Line type="monotone" dataKey="total" name="Total" stroke="#5fd4ac" strokeWidth={2} />
-                <Line type="monotone" dataKey="P1" name="Program 1" stroke="#6b5ecc" />
-                <Line type="monotone" dataKey="P2" name="Program 2" stroke="#4a9af5" />
-              </LineChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
+      <div className="flex justify-end">
+        <div className="space-y-1 w-[180px]">
+          <Label htmlFor="period">Perioadă</Label>
+          <Select
+            value={period}
+            onValueChange={setPeriod}
+          >
+            <SelectTrigger id="period">
+              <SelectValue placeholder="Selectează perioada" />
+            </SelectTrigger>
+            <SelectContent>
+              {periods.map((p) => (
+                <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Membri vs Guests</CardTitle>
-            <CardDescription>
-              Distribuția prezenței pe categorii
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="h-80">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={categoryData}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                  outerRadius={80}
-                  fill="#8884d8"
-                  dataKey="value"
-                >
-                  {categoryData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip formatter={(value) => [`${value} prezențe`, ""]} />
-              </PieChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
+      <Tabs defaultValue="program" className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="program">Participare Program</TabsTrigger>
+          <TabsTrigger value="age">Participare pe Grupe de Vârstă</TabsTrigger>
+          <TabsTrigger value="new">Copii Noi</TabsTrigger>
+        </TabsList>
         
-        <Card>
-          <CardHeader>
-            <CardTitle>Prezență pe Grupe de Vârstă</CardTitle>
-            <CardDescription>
-              Distribuția prezenței pe grupe de vârstă
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="h-80">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart layout="vertical" data={ageGroupData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis type="number" />
-                <YAxis 
-                  type="category" 
-                  dataKey="name" 
-                  tickFormatter={(value) => {
-                    switch(value) {
-                      case "0-1": return "0-1 ani";
-                      case "1-2": return "1-2 ani";
-                      case "2-3": return "2-3 ani";
-                      case "4-6": return "4-6 ani";
-                      case "7-12": return "7-12 ani";
-                      default: return value;
-                    }
-                  }}
-                />
-                <Tooltip />
-                <Legend />
-                <Bar dataKey="total" name="Total Prezențe" fill="#6b5ecc" />
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-      </div>
-      
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Top 20 Copii Cei Mai Prezenți</CardTitle>
-            <CardDescription>
-              Copiii cu cele mai multe prezențe
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="h-96 overflow-auto">
-            <div className="space-y-2">
-              {topPresent.map((child, index) => (
-                <div 
-                  key={child.id} 
-                  className="flex items-center justify-between p-2 rounded-md hover:bg-muted"
-                >
-                  <div className="flex items-center gap-2">
-                    <div className="w-5 text-center font-medium">{index + 1}.</div>
-                    <div>
-                      <div className="font-medium">{child.name}</div>
-                      <div className="flex items-center gap-1 mt-1">
-                        <AgeGroupBadge ageGroup={child.ageGroup} />
-                        <CategoryBadge category={child.category} />
-                      </div>
-                    </div>
-                  </div>
-                  <div className="font-bold text-primary">{child.count}</div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+        <TabsContent value="program" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Participare pe Program</CardTitle>
+              <CardDescription>Tendințe de participare pentru fiecare program în perioada selectată</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={programAttendanceData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="name" />
+                  <YAxis />
+                  <Tooltip />
+                  <Legend />
+                  <Bar dataKey="Program 1" fill="#8884d8" />
+                  <Bar dataKey="Program 2" fill="#82ca9d" />
+                </BarChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        </TabsContent>
         
-        <Card>
-          <CardHeader>
-            <CardTitle>Top 20 Copii Cei Mai Absenți</CardTitle>
-            <CardDescription>
-              Copiii cu cele mai multe absențe
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="h-96 overflow-auto">
-            <div className="space-y-2">
-              {topAbsent.map((child, index) => (
-                <div 
-                  key={child.id} 
-                  className="flex items-center justify-between p-2 rounded-md hover:bg-muted"
-                >
-                  <div className="flex items-center gap-2">
-                    <div className="w-5 text-center font-medium">{index + 1}.</div>
-                    <div>
-                      <div className="font-medium">{child.name}</div>
-                      <div className="flex items-center gap-1 mt-1">
-                        <AgeGroupBadge ageGroup={child.ageGroup} />
-                        <CategoryBadge category={child.category} />
-                      </div>
-                    </div>
-                  </div>
-                  <div className="font-bold text-red-500">{child.absences}</div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+        <TabsContent value="age" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Participare pe Grupe de Vârstă</CardTitle>
+              <CardDescription>Distribuția participanților pe grupe de vârstă</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={300}>
+                <PieChart>
+                  <Pie
+                    dataKey="value"
+                    isAnimationActive={false}
+                    data={ageGroupData}
+                    cx="50%"
+                    cy="50%"
+                    outerRadius={80}
+                    fill="#8884d8"
+                    label
+                  >
+                    {ageGroupData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                  <Legend />
+                </PieChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        </TabsContent>
+        
+        <TabsContent value="new" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Tendința Copiilor Noi</CardTitle>
+              <CardDescription>Numărul de copii noi înregistrați în perioada selectată</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={newChildrenData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="name" />
+                  <YAxis />
+                  <Tooltip />
+                  <Legend />
+                  <Bar dataKey="Copii noi" fill="#FFBB28" />
+                </BarChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };

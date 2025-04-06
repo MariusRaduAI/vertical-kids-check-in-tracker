@@ -5,7 +5,7 @@ export interface TagPreviewType {
   childName: string;
   uniqueCode: string;
   ageGroup: AgeGroup;
-  program: ProgramType;
+  program: ProgramType; // Updated to use ProgramType which includes "Both"
   date: string;
 }
 
