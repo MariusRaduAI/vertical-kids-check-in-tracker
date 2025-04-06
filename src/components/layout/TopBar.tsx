@@ -3,7 +3,7 @@ import React from "react";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { SidebarTrigger } from "@/components/ui/sidebar";
-import { Bell, HelpCircle, User } from "lucide-react";
+import { HelpCircle, User } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,6 +13,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import EmergencyContactButton from "./EmergencyContactButton";
 
 const TopBar: React.FC = () => {
   const today = new Date();
@@ -38,11 +39,9 @@ const TopBar: React.FC = () => {
       </div>
 
       <div className="flex items-center gap-2">
+        <EmergencyContactButton />
         <Button variant="ghost" size="icon">
           <HelpCircle className="h-5 w-5" />
-        </Button>
-        <Button variant="ghost" size="icon">
-          <Bell className="h-5 w-5" />
         </Button>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
