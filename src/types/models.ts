@@ -70,3 +70,6 @@ export interface AttendanceSummary {
     Guest: number;
   };
 }
+
+// Add a new type for tag preview that includes the "Both" option
+export type ProgramType = 'P1' | 'P2' | 'Both';

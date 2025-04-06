@@ -24,7 +24,7 @@ import { format } from "date-fns";
 import AgeGroupBadge from "@/components/common/AgeGroupBadge";
 import CategoryBadge from "@/components/common/CategoryBadge";
 import NewChildBadge from "@/components/common/NewChildBadge";
-import { Child, AgeGroup } from "@/types/models";
+import { Child, AgeGroup, ProgramType } from "@/types/models";
 import { Search, AlertTriangle, Tag, Printer, BadgePlus } from "lucide-react";
 import { 
   Dialog, 
@@ -43,6 +43,14 @@ import {
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import UpcomingSundayBirthdays from "@/components/checkin/UpcomingSundayBirthdays";
 
+interface TagPreviewType {
+  childName: string;
+  uniqueCode: string;
+  ageGroup: AgeGroup;
+  program: ProgramType;
+  date: string;
+}
+
 const CheckIn: React.FC = () => {
   const {
     searchChildren,
@@ -60,7 +68,7 @@ const CheckIn: React.FC = () => {
   const [selectedChild, setSelectedChild] = useState<Child | null>(null);
   const [isNewChild, setIsNewChild] = useState(false);
   
-  const [programSelection, setProgramSelection] = useState<"P1" | "P2" | "Both">("P1");
+  const [programSelection, setProgramSelection] = useState<ProgramType>("P1");
   
   const [newChildData, setNewChildData] = useState({
     firstName: "",
@@ -73,13 +81,7 @@ const CheckIn: React.FC = () => {
   const [tagOpen, setTagOpen] = useState(false);
   const [tagCount, setTagCount] = useState(3);
   
-  const [generatedTags, setGeneratedTags] = useState<Array<{
-    childName: string;
-    uniqueCode: string;
-    ageGroup: AgeGroup;
-    program: "P1" | "P2";
-    date: string;
-  }> | null>(null);
+  const [generatedTags, setGeneratedTags] = useState<TagPreviewType[] | null>(null);
 
   const todayStats = getTotalPresentToday();
   const todaySummary = getAttendanceSummaryForDate(currentSunday);
@@ -184,11 +186,11 @@ const CheckIn: React.FC = () => {
       );
 
       if (attendanceP1 && attendanceP2) {
-        const combinedTag = {
+        const combinedTag: TagPreviewType = {
           childName: selectedChild.fullName,
           uniqueCode: `${attendanceP1.uniqueCode?.split('--')[0]}--P1+P2`,
           ageGroup: selectedChild.ageGroup,
-          program: "Both" as "P1" | "P2" | "Both",
+          program: "Both",
           date: format(new Date(currentSunday), "dd.MM.yyyy"),
         };
         
@@ -204,7 +206,7 @@ const CheckIn: React.FC = () => {
       );
 
       if (attendance) {
-        const tag = {
+        const tag: TagPreviewType = {
           childName: selectedChild.fullName,
           uniqueCode: attendance.uniqueCode || "",
           ageGroup: selectedChild.ageGroup,
@@ -244,11 +246,11 @@ const CheckIn: React.FC = () => {
   const LiveTagPreview = () => {
     if (!selectedChild) return null;
     
-    const previewTag = {
+    const previewTag: TagPreviewType = {
       childName: selectedChild.fullName,
       uniqueCode: `${selectedChild.firstName.charAt(0)}${selectedChild.lastName.charAt(0)}--${programSelection === "Both" ? "P1+P2" : programSelection}`,
       ageGroup: selectedChild.ageGroup,
-      program: programSelection as "P1" | "P2" | "Both",
+      program: programSelection,
       date: format(new Date(currentSunday), "dd.MM.yyyy"),
     };
     
@@ -273,7 +275,7 @@ const CheckIn: React.FC = () => {
     );
   };
 
-  const TagPreview = ({ tag }: { tag: any }) => {
+  const TagPreview = ({ tag }: { tag: TagPreviewType }) => {
     if (!tag) return null;
     
     return (
