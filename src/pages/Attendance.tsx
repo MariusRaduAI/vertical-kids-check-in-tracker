@@ -30,6 +30,11 @@ import AgeGroupBadge from "@/components/common/AgeGroupBadge";
 import CategoryBadge from "@/components/common/CategoryBadge";
 import { Child, AgeGroup, Attendance as AttendanceType } from "@/types/models";
 import { Search, Download, Filter } from "lucide-react";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 
 const AttendancePage: React.FC = () => {
   const { children, attendance, sundays } = useApp();
@@ -39,6 +44,7 @@ const AttendancePage: React.FC = () => {
   const [period, setPeriod] = useState("all");
   const [ageGroupFilter, setAgeGroupFilter] = useState<AgeGroup | "all">("all");
   const [categoryFilter, setCategoryFilter] = useState<"Membru" | "Guest" | "all">("all");
+  const [isFiltersOpen, setIsFiltersOpen] = useState(true);
   
   // Get filtered children
   const getFilteredChildren = () => {
@@ -67,17 +73,6 @@ const AttendancePage: React.FC = () => {
     }
     
     return filteredChildren;
-  };
-  
-  // Calculate attendance for a child
-  const getChildAttendance = (childId: string, sundayDate: string, program: "P1" | "P2") => {
-    const record = attendance.find(a => 
-      a.childId === childId && 
-      a.date === sundayDate && 
-      a.program === program
-    );
-    
-    return record?.status || "A";
   };
   
   // Get visible sundays based on period filter
@@ -120,9 +115,13 @@ const AttendancePage: React.FC = () => {
   const visibleSundays = getVisibleSundays();
   const filteredChildren = getFilteredChildren();
   
-  // Calculate attendance statistics
+  // Calculate attendance statistics for a specific child based on filtered Sundays
   const calculateAttendanceStats = (childId: string) => {
-    const childAttendances = attendance.filter(a => a.childId === childId);
+    const childAttendances = attendance.filter(a => 
+      a.childId === childId && 
+      visibleSundays.includes(a.date)
+    );
+    
     const totalPresent = childAttendances.filter(a => a.status === "P").length;
     const totalPossible = visibleSundays.length * 2; // P1 and P2 for each Sunday
     const attendancePercentage = totalPossible > 0 ? (totalPresent / totalPossible) * 100 : 0;
@@ -162,185 +161,224 @@ const AttendancePage: React.FC = () => {
         }
       />
       
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle>Filtre</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="relative">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                type="search"
-                placeholder="Caută după nume..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-8"
-              />
-            </div>
-            
-            <div>
-              <Select value={period} onValueChange={setPeriod}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Perioada" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Toate duminicile</SelectItem>
-                  <SelectItem value="week">Această săptămână</SelectItem>
-                  <SelectItem value="month">Această lună</SelectItem>
-                  <SelectItem value="3months">Ultimele 3 luni</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div>
-              <Select value={ageGroupFilter} onValueChange={(value) => setAgeGroupFilter(value as AgeGroup | "all")}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Grupa de vârstă" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Toate grupele</SelectItem>
-                  <SelectItem value="0-1">0-1 ani</SelectItem>
-                  <SelectItem value="1-2">1-2 ani</SelectItem>
-                  <SelectItem value="2-3">2-3 ani</SelectItem>
-                  <SelectItem value="4-6">4-6 ani</SelectItem>
-                  <SelectItem value="7-12">7-12 ani</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div>
-              <Select value={categoryFilter} onValueChange={(value) => setCategoryFilter(value as "Membru" | "Guest" | "all")}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Categorie" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Toate categoriile</SelectItem>
-                  <SelectItem value="Membru">Membri</SelectItem>
-                  <SelectItem value="Guest">Guests</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-      
-      <Card>
-        <CardHeader>
-          <CardTitle>Tabel Prezență</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-[250px] sticky left-0 bg-white">Nume</TableHead>
-                  <TableHead>Grupa</TableHead>
-                  <TableHead>Categorie</TableHead>
-                  <TableHead>% Prezență</TableHead>
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+        <div className="md:col-span-1">
+          <Collapsible
+            open={isFiltersOpen}
+            onOpenChange={setIsFiltersOpen}
+            className="w-full"
+          >
+            <Card>
+              <CardHeader className="pb-2 flex flex-row items-center justify-between">
+                <CardTitle className="text-lg flex items-center">
+                  <Filter className="h-4 w-4 mr-2" />
+                  Filtre
+                </CardTitle>
+                <CollapsibleTrigger asChild>
+                  <Button variant="ghost" size="sm" className="md:hidden">
+                    {isFiltersOpen ? "Ascunde" : "Arată"}
+                  </Button>
+                </CollapsibleTrigger>
+              </CardHeader>
+              <CollapsibleContent>
+                <CardContent className="space-y-4">
+                  <div>
+                    <label className="text-sm font-medium mb-1 block">Caută</label>
+                    <div className="relative">
+                      <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        type="search"
+                        placeholder="Caută după nume..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="pl-8"
+                      />
+                    </div>
+                  </div>
                   
-                  {visibleSundays.map(sunday => (
-                    <TableHead key={sunday} className="text-center" colSpan={2}>
-                      <div className="text-xs whitespace-nowrap">
-                        {format(parseISO(sunday), "dd.MM.yyyy")}
-                      </div>
-                      <div className="flex text-[10px] divide-x">
-                        <div className="flex-1 px-1">P1</div>
-                        <div className="flex-1 px-1">P2</div>
-                      </div>
-                    </TableHead>
-                  ))}
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredChildren.map(child => {
-                  const stats = calculateAttendanceStats(child.id);
+                  <div>
+                    <label className="text-sm font-medium mb-1 block">Perioada</label>
+                    <Select value={period} onValueChange={setPeriod}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Perioada" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Toate duminicile</SelectItem>
+                        <SelectItem value="week">Această săptămână</SelectItem>
+                        <SelectItem value="month">Această lună</SelectItem>
+                        <SelectItem value="3months">Ultimele 3 luni</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                   
-                  return (
-                    <TableRow key={child.id}>
-                      <TableCell className="font-medium sticky left-0 bg-white">
-                        {child.fullName}
-                      </TableCell>
-                      <TableCell>
-                        <AgeGroupBadge ageGroup={child.ageGroup} />
-                      </TableCell>
-                      <TableCell>
-                        <CategoryBadge category={child.category} />
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-1">
-                          <div className="h-2 w-20 bg-gray-200 rounded-full overflow-hidden">
-                            <div
-                              className="h-full bg-primary"
-                              style={{ width: `${stats.attendancePercentage}%` }}
-                            ></div>
-                          </div>
-                          <span className="text-xs">{stats.attendancePercentage}%</span>
-                        </div>
-                      </TableCell>
+                  <div>
+                    <label className="text-sm font-medium mb-1 block">Grupa de vârstă</label>
+                    <Select value={ageGroupFilter} onValueChange={(value) => setAgeGroupFilter(value as AgeGroup | "all")}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Grupa de vârstă" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Toate grupele</SelectItem>
+                        <SelectItem value="0-1">0-1 ani</SelectItem>
+                        <SelectItem value="1-2">1-2 ani</SelectItem>
+                        <SelectItem value="2-3">2-3 ani</SelectItem>
+                        <SelectItem value="4-6">4-6 ani</SelectItem>
+                        <SelectItem value="7-12">7-12 ani</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div>
+                    <label className="text-sm font-medium mb-1 block">Categorie</label>
+                    <Select value={categoryFilter} onValueChange={(value) => setCategoryFilter(value as "Membru" | "Guest" | "all")}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Categorie" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Toate categoriile</SelectItem>
+                        <SelectItem value="Membru">Membri</SelectItem>
+                        <SelectItem value="Guest">Guests</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </CardContent>
+              </CollapsibleContent>
+            </Card>
+          </Collapsible>
+        </div>
+        
+        <div className="md:col-span-3">
+          <Card>
+            <CardHeader>
+              <CardTitle>Tabel Prezență</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-[250px] sticky left-0 bg-white">Nume</TableHead>
+                      <TableHead>Grupa</TableHead>
+                      <TableHead>Vârsta</TableHead>
+                      <TableHead>Categorie</TableHead>
+                      <TableHead>% Prezență</TableHead>
                       
                       {visibleSundays.map(sunday => (
-                        <TableCell key={`${child.id}-${sunday}`} className="p-0" colSpan={2}>
-                          <div className="grid grid-cols-2 h-full">
-                            <div className="py-4 text-center border-r">
-                              <span
-                                className={
-                                  getChildAttendance(child.id, sunday, "P1") === "P"
-                                    ? "text-green-600 font-bold"
-                                    : "text-red-600"
-                                }
-                              >
-                                {getChildAttendance(child.id, sunday, "P1")}
-                              </span>
-                            </div>
-                            <div className="py-4 text-center">
-                              <span
-                                className={
-                                  getChildAttendance(child.id, sunday, "P2") === "P"
-                                    ? "text-green-600 font-bold"
-                                    : "text-red-600"
-                                }
-                              >
-                                {getChildAttendance(child.id, sunday, "P2")}
-                              </span>
-                            </div>
+                        <TableHead key={sunday} className="text-center" colSpan={2}>
+                          <div className="text-xs whitespace-nowrap">
+                            {format(parseISO(sunday), "dd.MM.yyyy")}
                           </div>
-                        </TableCell>
+                          <div className="flex text-[10px] divide-x">
+                            <div className="flex-1 px-1">P1</div>
+                            <div className="flex-1 px-1">P2</div>
+                          </div>
+                        </TableHead>
                       ))}
                     </TableRow>
-                  );
-                })}
-                
-                {/* Summary row */}
-                <TableRow className="bg-muted/50">
-                  <TableCell className="font-bold sticky left-0 bg-muted/50" colSpan={4}>
-                    Total prezențe
-                  </TableCell>
-                  
-                  {visibleSundays.map(sunday => {
-                    const summary = getSundaySummary(sunday);
+                  </TableHeader>
+                  <TableBody>
+                    {filteredChildren.map(child => {
+                      const stats = calculateAttendanceStats(child.id);
+                      
+                      return (
+                        <TableRow key={child.id}>
+                          <TableCell className="font-medium sticky left-0 bg-white">
+                            {child.fullName}
+                          </TableCell>
+                          <TableCell>
+                            <AgeGroupBadge ageGroup={child.ageGroup} />
+                          </TableCell>
+                          <TableCell>{child.age} ani</TableCell>
+                          <TableCell>
+                            <CategoryBadge category={child.category} />
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-1">
+                              <div className="h-2 w-20 bg-gray-200 rounded-full overflow-hidden">
+                                <div
+                                  className="h-full bg-primary"
+                                  style={{ width: `${stats.attendancePercentage}%` }}
+                                ></div>
+                              </div>
+                              <span className="text-xs">{stats.attendancePercentage}%</span>
+                            </div>
+                          </TableCell>
+                          
+                          {visibleSundays.map(sunday => (
+                            <TableCell key={`${child.id}-${sunday}`} className="p-0" colSpan={2}>
+                              <div className="grid grid-cols-2 h-full">
+                                <div className="py-4 text-center border-r">
+                                  <span
+                                    className={
+                                      getChildAttendance(child.id, sunday, "P1") === "P"
+                                        ? "text-green-600 font-bold"
+                                        : "text-red-600"
+                                    }
+                                  >
+                                    {getChildAttendance(child.id, sunday, "P1")}
+                                  </span>
+                                </div>
+                                <div className="py-4 text-center">
+                                  <span
+                                    className={
+                                      getChildAttendance(child.id, sunday, "P2") === "P"
+                                        ? "text-green-600 font-bold"
+                                        : "text-red-600"
+                                    }
+                                  >
+                                    {getChildAttendance(child.id, sunday, "P2")}
+                                  </span>
+                                </div>
+                              </div>
+                            </TableCell>
+                          ))}
+                        </TableRow>
+                      );
+                    })}
                     
-                    return (
-                      <TableCell key={`summary-${sunday}`} className="p-0" colSpan={2}>
-                        <div className="grid grid-cols-2 h-full">
-                          <div className="py-4 text-center border-r font-medium text-primary">
-                            {summary.p1}
-                          </div>
-                          <div className="py-4 text-center font-medium text-primary">
-                            {summary.p2}
-                          </div>
-                        </div>
+                    {/* Summary row */}
+                    <TableRow className="bg-muted/50">
+                      <TableCell className="font-bold sticky left-0 bg-muted/50" colSpan={5}>
+                        Total prezențe
                       </TableCell>
-                    );
-                  })}
-                </TableRow>
-              </TableBody>
-            </Table>
-          </div>
-        </CardContent>
-      </Card>
+                      
+                      {visibleSundays.map(sunday => {
+                        const summary = getSundaySummary(sunday);
+                        
+                        return (
+                          <TableCell key={`summary-${sunday}`} className="p-0" colSpan={2}>
+                            <div className="grid grid-cols-2 h-full">
+                              <div className="py-4 text-center border-r font-medium text-primary">
+                                {summary.p1}
+                              </div>
+                              <div className="py-4 text-center font-medium text-primary">
+                                {summary.p2}
+                              </div>
+                            </div>
+                          </TableCell>
+                        );
+                      })}
+                    </TableRow>
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
     </div>
   );
+  
+  // Helper function to get attendance status for a child on a specific Sunday and program
+  function getChildAttendance(childId: string, sundayDate: string, program: "P1" | "P2") {
+    const record = attendance.find(a => 
+      a.childId === childId && 
+      a.date === sundayDate && 
+      a.program === program
+    );
+    
+    return record?.status || "A";
+  }
 };
 
 export default AttendancePage;
