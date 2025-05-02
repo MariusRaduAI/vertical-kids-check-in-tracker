@@ -29,6 +29,10 @@ export const useCheckIn = () => {
     firstName: "",
     lastName: "",
     ageGroup: "4-6",
+    parentName: "",
+    birthDate: format(new Date(), "yyyy-MM-dd"),
+    hasAllergies: false,
+    allergiesDetails: ""
   });
   
   const [medicalCheckComplete, setMedicalCheckComplete] = useState(false);
@@ -63,17 +67,17 @@ export const useCheckIn = () => {
     
     const nameParts = searchQuery.split(" ");
     if (nameParts.length >= 2) {
-      setNewChildData({
-        ...newChildData,
+      setNewChildData(prev => ({
+        ...prev,
         firstName: nameParts[0],
         lastName: nameParts.slice(1).join(" "),
-      });
+      }));
     } else {
-      setNewChildData({
-        ...newChildData,
+      setNewChildData(prev => ({
+        ...prev,
         firstName: searchQuery,
         lastName: "",
-      });
+      }));
     }
   };
 
@@ -89,19 +93,21 @@ export const useCheckIn = () => {
 
     const fullName = `${newChildData.firstName} ${newChildData.lastName}`;
     
-    const birthDate = new Date();
-    birthDate.setFullYear(birthDate.getFullYear() - 5);
+    // Use the birthDate from form data or default to a reasonable value
+    const birthDate = newChildData.birthDate || format(new Date(), "yyyy-MM-dd");
     
     const newChild = addChild({
       firstName: newChildData.firstName,
       lastName: newChildData.lastName,
       fullName,
-      birthDate: birthDate.toISOString().split("T")[0],
-      age: 5,
+      birthDate: birthDate,
+      age: 5, // This could be calculated based on the birthDate
       daysUntilBirthday: 0,
       ageGroup: newChildData.ageGroup,
       category: "Guest",
-      parents: [],
+      parents: newChildData.parentName ? [newChildData.parentName] : [],
+      hasAllergies: newChildData.hasAllergies,
+      allergiesDetails: newChildData.allergiesDetails || ""
     });
 
     setSelectedChild(newChild);
