@@ -25,16 +25,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { format, parseISO, startOfWeek, endOfWeek, startOfMonth, endOfMonth, subMonths } from "date-fns";
+import { format, parseISO, startOfWeek, endOfWeek, startOfMonth, endOfMonth, subMonths, getYear, startOfYear, endOfYear } from "date-fns";
 import AgeGroupBadge from "@/components/common/AgeGroupBadge";
 import CategoryBadge from "@/components/common/CategoryBadge";
 import { Child, AgeGroup, Attendance as AttendanceType } from "@/types/models";
-import { Search, Download, Filter } from "lucide-react";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
+import { Search, Download, Filter, Calendar, CalendarRange } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import { cn } from "@/lib/utils";
 
 const AttendancePage: React.FC = () => {
   const { children, attendance, sundays } = useApp();
@@ -44,7 +42,14 @@ const AttendancePage: React.FC = () => {
   const [period, setPeriod] = useState("all");
   const [ageGroupFilter, setAgeGroupFilter] = useState<AgeGroup | "all">("all");
   const [categoryFilter, setCategoryFilter] = useState<"Membru" | "Guest" | "all">("all");
-  const [isFiltersOpen, setIsFiltersOpen] = useState(true);
+  const [dateRange, setDateRange] = useState<{
+    from: Date | undefined;
+    to: Date | undefined;
+  }>({
+    from: undefined,
+    to: undefined,
+  });
+  const currentYear = new Date().getFullYear();
   
   // Get filtered children
   const getFilteredChildren = () => {
@@ -104,6 +109,24 @@ const AttendancePage: React.FC = () => {
           return date >= threeMonthsAgo;
         });
         break;
+      case "year":
+        const startCurrentYear = startOfYear(today);
+        const endCurrentYear = endOfYear(today);
+        filtered = sundays.filter(sunday => {
+          const date = parseISO(sunday);
+          return date >= startCurrentYear && date <= endCurrentYear;
+        });
+        break;
+      case "custom":
+        if (dateRange.from && dateRange.to) {
+          filtered = sundays.filter(sunday => {
+            const date = parseISO(sunday);
+            return date >= dateRange.from! && date <= dateRange.to!;
+          });
+        } else {
+          filtered = sundays;
+        }
+        break;
       default:
         filtered = sundays;
     }
@@ -161,211 +184,241 @@ const AttendancePage: React.FC = () => {
         }
       />
       
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
-        <div className="md:col-span-1">
-          <Collapsible
-            open={isFiltersOpen}
-            onOpenChange={setIsFiltersOpen}
-            className="w-full"
-          >
-            <Card>
-              <CardHeader className="pb-2 flex flex-row items-center justify-between">
-                <CardTitle className="text-lg flex items-center">
-                  <Filter className="h-4 w-4 mr-2" />
-                  Filtre
-                </CardTitle>
-                <CollapsibleTrigger asChild>
-                  <Button variant="ghost" size="sm" className="md:hidden">
-                    {isFiltersOpen ? "Ascunde" : "Arată"}
-                  </Button>
-                </CollapsibleTrigger>
-              </CardHeader>
-              <CollapsibleContent>
-                <CardContent className="space-y-4">
-                  <div>
-                    <label className="text-sm font-medium mb-1 block">Caută</label>
-                    <div className="relative">
-                      <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        type="search"
-                        placeholder="Caută după nume..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="pl-8"
+      {/* Filters Card - Moved to top */}
+      <Card className="mb-6">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-lg flex items-center">
+            <Filter className="h-4 w-4 mr-2" />
+            Filtre
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* Search Filter */}
+            <div>
+              <label className="text-sm font-medium mb-1 block">Caută</label>
+              <div className="relative">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  type="search"
+                  placeholder="Caută după nume..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-8"
+                />
+              </div>
+            </div>
+            
+            {/* Period Filter */}
+            <div>
+              <label className="text-sm font-medium mb-1 block">Perioada</label>
+              <Select value={period} onValueChange={setPeriod}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Perioada" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Toate duminicile</SelectItem>
+                  <SelectItem value="week">Această săptămână</SelectItem>
+                  <SelectItem value="month">Această lună</SelectItem>
+                  <SelectItem value="3months">Ultimele 3 luni</SelectItem>
+                  <SelectItem value="year">Anul {currentYear}</SelectItem>
+                  <SelectItem value="custom">Perioadă personalizată</SelectItem>
+                </SelectContent>
+              </Select>
+              
+              {period === "custom" && (
+                <div className="mt-2">
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          "w-full justify-start text-left font-normal",
+                          !dateRange.from && "text-muted-foreground"
+                        )}
+                      >
+                        <CalendarRange className="mr-2 h-4 w-4" />
+                        {dateRange.from ? (
+                          dateRange.to ? (
+                            <>
+                              {format(dateRange.from, "dd.MM.yyyy")} - {format(dateRange.to, "dd.MM.yyyy")}
+                            </>
+                          ) : (
+                            format(dateRange.from, "dd.MM.yyyy")
+                          )
+                        ) : (
+                          "Selectează perioada"
+                        )}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <CalendarComponent
+                        initialFocus
+                        mode="range"
+                        defaultMonth={new Date()}
+                        selected={dateRange}
+                        onSelect={setDateRange}
+                        numberOfMonths={2}
+                        className="pointer-events-auto"
                       />
-                    </div>
-                  </div>
+                    </PopoverContent>
+                  </Popover>
+                </div>
+              )}
+            </div>
+            
+            {/* Age Group Filter */}
+            <div>
+              <label className="text-sm font-medium mb-1 block">Grupa de vârstă</label>
+              <Select value={ageGroupFilter} onValueChange={(value) => setAgeGroupFilter(value as AgeGroup | "all")}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Grupa de vârstă" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Toate grupele</SelectItem>
+                  <SelectItem value="0-1">0-1 ani</SelectItem>
+                  <SelectItem value="1-2">1-2 ani</SelectItem>
+                  <SelectItem value="2-3">2-3 ani</SelectItem>
+                  <SelectItem value="4-6">4-6 ani</SelectItem>
+                  <SelectItem value="7-12">7-12 ani</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            {/* Category Filter */}
+            <div>
+              <label className="text-sm font-medium mb-1 block">Categorie</label>
+              <Select value={categoryFilter} onValueChange={(value) => setCategoryFilter(value as "Membru" | "Guest" | "all")}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Categorie" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Toate categoriile</SelectItem>
+                  <SelectItem value="Membru">Membri</SelectItem>
+                  <SelectItem value="Guest">Guests</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+      
+      <Card>
+        <CardHeader>
+          <CardTitle>Tabel Prezență</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-[250px] sticky left-0 bg-white">Nume</TableHead>
+                  <TableHead>Grupa</TableHead>
+                  <TableHead>Vârsta</TableHead>
+                  <TableHead>Categorie</TableHead>
+                  <TableHead>% Prezență</TableHead>
                   
-                  <div>
-                    <label className="text-sm font-medium mb-1 block">Perioada</label>
-                    <Select value={period} onValueChange={setPeriod}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Perioada" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">Toate duminicile</SelectItem>
-                        <SelectItem value="week">Această săptămână</SelectItem>
-                        <SelectItem value="month">Această lună</SelectItem>
-                        <SelectItem value="3months">Ultimele 3 luni</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+                  {visibleSundays.map(sunday => (
+                    <TableHead key={sunday} className="text-center" colSpan={2}>
+                      <div className="text-xs whitespace-nowrap">
+                        {format(parseISO(sunday), "dd.MM.yyyy")}
+                      </div>
+                      <div className="flex text-[10px] divide-x">
+                        <div className="flex-1 px-1">P1</div>
+                        <div className="flex-1 px-1">P2</div>
+                      </div>
+                    </TableHead>
+                  ))}
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredChildren.map(child => {
+                  const stats = calculateAttendanceStats(child.id);
                   
-                  <div>
-                    <label className="text-sm font-medium mb-1 block">Grupa de vârstă</label>
-                    <Select value={ageGroupFilter} onValueChange={(value) => setAgeGroupFilter(value as AgeGroup | "all")}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Grupa de vârstă" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">Toate grupele</SelectItem>
-                        <SelectItem value="0-1">0-1 ani</SelectItem>
-                        <SelectItem value="1-2">1-2 ani</SelectItem>
-                        <SelectItem value="2-3">2-3 ani</SelectItem>
-                        <SelectItem value="4-6">4-6 ani</SelectItem>
-                        <SelectItem value="7-12">7-12 ani</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  
-                  <div>
-                    <label className="text-sm font-medium mb-1 block">Categorie</label>
-                    <Select value={categoryFilter} onValueChange={(value) => setCategoryFilter(value as "Membru" | "Guest" | "all")}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Categorie" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">Toate categoriile</SelectItem>
-                        <SelectItem value="Membru">Membri</SelectItem>
-                        <SelectItem value="Guest">Guests</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </CardContent>
-              </CollapsibleContent>
-            </Card>
-          </Collapsible>
-        </div>
-        
-        <div className="md:col-span-3">
-          <Card>
-            <CardHeader>
-              <CardTitle>Tabel Prezență</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="w-[250px] sticky left-0 bg-white">Nume</TableHead>
-                      <TableHead>Grupa</TableHead>
-                      <TableHead>Vârsta</TableHead>
-                      <TableHead>Categorie</TableHead>
-                      <TableHead>% Prezență</TableHead>
-                      
-                      {visibleSundays.map(sunday => (
-                        <TableHead key={sunday} className="text-center" colSpan={2}>
-                          <div className="text-xs whitespace-nowrap">
-                            {format(parseISO(sunday), "dd.MM.yyyy")}
+                  return (
+                    <TableRow key={child.id}>
+                      <TableCell className="font-medium sticky left-0 bg-white">
+                        {child.fullName}
+                      </TableCell>
+                      <TableCell>
+                        <AgeGroupBadge ageGroup={child.ageGroup} />
+                      </TableCell>
+                      <TableCell>{child.age} ani</TableCell>
+                      <TableCell>
+                        <CategoryBadge category={child.category} />
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1">
+                          <div className="h-2 w-20 bg-gray-200 rounded-full overflow-hidden">
+                            <div
+                              className="h-full bg-primary"
+                              style={{ width: `${stats.attendancePercentage}%` }}
+                            ></div>
                           </div>
-                          <div className="flex text-[10px] divide-x">
-                            <div className="flex-1 px-1">P1</div>
-                            <div className="flex-1 px-1">P2</div>
-                          </div>
-                        </TableHead>
-                      ))}
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredChildren.map(child => {
-                      const stats = calculateAttendanceStats(child.id);
-                      
-                      return (
-                        <TableRow key={child.id}>
-                          <TableCell className="font-medium sticky left-0 bg-white">
-                            {child.fullName}
-                          </TableCell>
-                          <TableCell>
-                            <AgeGroupBadge ageGroup={child.ageGroup} />
-                          </TableCell>
-                          <TableCell>{child.age} ani</TableCell>
-                          <TableCell>
-                            <CategoryBadge category={child.category} />
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-1">
-                              <div className="h-2 w-20 bg-gray-200 rounded-full overflow-hidden">
-                                <div
-                                  className="h-full bg-primary"
-                                  style={{ width: `${stats.attendancePercentage}%` }}
-                                ></div>
-                              </div>
-                              <span className="text-xs">{stats.attendancePercentage}%</span>
-                            </div>
-                          </TableCell>
-                          
-                          {visibleSundays.map(sunday => (
-                            <TableCell key={`${child.id}-${sunday}`} className="p-0" colSpan={2}>
-                              <div className="grid grid-cols-2 h-full">
-                                <div className="py-4 text-center border-r">
-                                  <span
-                                    className={
-                                      getChildAttendance(child.id, sunday, "P1") === "P"
-                                        ? "text-green-600 font-bold"
-                                        : "text-red-600"
-                                    }
-                                  >
-                                    {getChildAttendance(child.id, sunday, "P1")}
-                                  </span>
-                                </div>
-                                <div className="py-4 text-center">
-                                  <span
-                                    className={
-                                      getChildAttendance(child.id, sunday, "P2") === "P"
-                                        ? "text-green-600 font-bold"
-                                        : "text-red-600"
-                                    }
-                                  >
-                                    {getChildAttendance(child.id, sunday, "P2")}
-                                  </span>
-                                </div>
-                              </div>
-                            </TableCell>
-                          ))}
-                        </TableRow>
-                      );
-                    })}
-                    
-                    {/* Summary row */}
-                    <TableRow className="bg-muted/50">
-                      <TableCell className="font-bold sticky left-0 bg-muted/50" colSpan={5}>
-                        Total prezențe
+                          <span className="text-xs">{stats.attendancePercentage}%</span>
+                        </div>
                       </TableCell>
                       
-                      {visibleSundays.map(sunday => {
-                        const summary = getSundaySummary(sunday);
-                        
-                        return (
-                          <TableCell key={`summary-${sunday}`} className="p-0" colSpan={2}>
-                            <div className="grid grid-cols-2 h-full">
-                              <div className="py-4 text-center border-r font-medium text-primary">
-                                {summary.p1}
-                              </div>
-                              <div className="py-4 text-center font-medium text-primary">
-                                {summary.p2}
-                              </div>
+                      {visibleSundays.map(sunday => (
+                        <TableCell key={`${child.id}-${sunday}`} className="p-0" colSpan={2}>
+                          <div className="grid grid-cols-2 h-full">
+                            <div className="py-4 text-center border-r">
+                              <span
+                                className={
+                                  getChildAttendance(child.id, sunday, "P1") === "P"
+                                    ? "text-green-600 font-bold"
+                                    : "text-red-600"
+                                }
+                              >
+                                {getChildAttendance(child.id, sunday, "P1")}
+                              </span>
                             </div>
-                          </TableCell>
-                        );
-                      })}
+                            <div className="py-4 text-center">
+                              <span
+                                className={
+                                  getChildAttendance(child.id, sunday, "P2") === "P"
+                                    ? "text-green-600 font-bold"
+                                    : "text-red-600"
+                                }
+                              >
+                                {getChildAttendance(child.id, sunday, "P2")}
+                              </span>
+                            </div>
+                          </div>
+                        </TableCell>
+                      ))}
                     </TableRow>
-                  </TableBody>
-                </Table>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
+                  );
+                })}
+                
+                {/* Summary row */}
+                <TableRow className="bg-muted/50">
+                  <TableCell className="font-bold sticky left-0 bg-muted/50" colSpan={5}>
+                    Total prezențe
+                  </TableCell>
+                  
+                  {visibleSundays.map(sunday => {
+                    const summary = getSundaySummary(sunday);
+                    
+                    return (
+                      <TableCell key={`summary-${sunday}`} className="p-0" colSpan={2}>
+                        <div className="grid grid-cols-2 h-full">
+                          <div className="py-4 text-center border-r font-medium text-primary">
+                            {summary.p1}
+                          </div>
+                          <div className="py-4 text-center font-medium text-primary">
+                            {summary.p2}
+                          </div>
+                        </div>
+                      </TableCell>
+                    );
+                  })}
+                </TableRow>
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
   
