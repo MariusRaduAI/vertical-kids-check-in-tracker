@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useApp } from "@/context/AppContext";
 import { format } from "date-fns";
@@ -54,6 +53,18 @@ export const useCheckIn = () => {
     }
   }, [searchQuery, searchChildren]);
 
+  // Calculate age from birthdate function
+  const calculateAge = (birthDate: string): number => {
+    const today = new Date();
+    const birthDateObj = new Date(birthDate);
+    let age = today.getFullYear() - birthDateObj.getFullYear();
+    const m = today.getMonth() - birthDateObj.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < birthDateObj.getDate())) {
+      age--;
+    }
+    return age;
+  };
+
   const handleSelectChild = (child: Child) => {
     setSelectedChild(child);
     setSearchQuery(child.fullName);
@@ -96,12 +107,15 @@ export const useCheckIn = () => {
     // Use the birthDate from form data or default to a reasonable value
     const birthDate = newChildData.birthDate || format(new Date(), "yyyy-MM-dd");
     
+    // Calculate age automatically based on birthdate
+    const calculatedAge = calculateAge(birthDate);
+    
     const newChild = addChild({
       firstName: newChildData.firstName,
       lastName: newChildData.lastName,
       fullName,
       birthDate: birthDate,
-      age: 5, // This could be calculated based on the birthDate
+      age: calculatedAge, // Use the calculated age instead of hardcoded value
       daysUntilBirthday: 0,
       ageGroup: newChildData.ageGroup,
       category: "Guest",
