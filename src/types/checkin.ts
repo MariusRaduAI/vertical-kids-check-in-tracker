@@ -19,4 +19,8 @@ export interface NewChildFormData {
   firstName: string;
   lastName: string;
   ageGroup: AgeGroup;
+  parentName: string;
+  birthDate: string;
+  hasAllergies: boolean;
+  allergiesDetails: string;
 }

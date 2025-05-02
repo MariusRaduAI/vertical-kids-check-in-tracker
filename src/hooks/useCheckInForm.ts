@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from "react";
 import { useApp } from "@/context/AppContext";
 import { format } from "date-fns";
@@ -29,6 +28,10 @@ export const useCheckInForm = () => {
     firstName: "",
     lastName: "",
     ageGroup: "4-6",
+    parentName: "",
+    birthDate: format(new Date(), "yyyy-MM-dd"),
+    hasAllergies: false,
+    allergiesDetails: "",
   });
   
   const [medicalCheckComplete, setMedicalCheckComplete] = useState(false);
@@ -91,25 +94,43 @@ export const useCheckInForm = () => {
 
     const fullName = `${newChildData.firstName} ${newChildData.lastName}`;
     
-    const birthDate = new Date();
-    birthDate.setFullYear(birthDate.getFullYear() - 5);
+    const birthDate = newChildData.birthDate || new Date().toISOString().split("T")[0];
     
     const newChild = addChild({
       firstName: newChildData.firstName,
       lastName: newChildData.lastName,
       fullName,
-      birthDate: birthDate.toISOString().split("T")[0],
-      age: 5,
+      birthDate: birthDate,
+      age: calculateAge(birthDate),
       daysUntilBirthday: 0,
       ageGroup: newChildData.ageGroup,
       category: "Guest",
-      parents: [],
+      parents: newChildData.parentName ? [newChildData.parentName] : [],
+      hasAllergies: newChildData.hasAllergies,
+      allergiesDetails: newChildData.allergiesDetails,
     });
 
     setSelectedChild(newChild);
     setSearchQuery(fullName);
     setIsNewChild(false);
+    
+    toast({
+      title: "Copil adăugat",
+      description: `${fullName} a fost adăugat cu succes.`,
+    });
   }, [addChild, newChildData, toast]);
+
+  // Function to calculate age from birthdate
+  const calculateAge = (birthDate: string): number => {
+    const today = new Date();
+    const birthDateObj = new Date(birthDate);
+    let age = today.getFullYear() - birthDateObj.getFullYear();
+    const m = today.getMonth() - birthDateObj.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < birthDateObj.getDate())) {
+      age--;
+    }
+    return age;
+  };
 
   const handleCheckIn = useCallback(() => {
     if (!selectedChild) return;
