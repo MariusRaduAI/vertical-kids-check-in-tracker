@@ -257,7 +257,11 @@ const AttendancePage: React.FC = () => {
                         mode="range"
                         defaultMonth={new Date()}
                         selected={dateRange}
-                        onSelect={setDateRange}
+                        onSelect={(range) => {
+                          if (range?.from && range?.to) {
+                            setDateRange({ from: range.from, to: range.to });
+                          }
+                        }}
                         numberOfMonths={2}
                         className="pointer-events-auto"
                       />
