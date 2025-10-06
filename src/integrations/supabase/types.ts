@@ -14,7 +14,203 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      attendance: {
+        Row: {
+          age_group: string
+          category: string
+          checked_by: string | null
+          checked_in_at: string | null
+          child_id: string
+          child_name: string
+          created_at: string
+          date: string
+          good_condition_check: boolean | null
+          id: string
+          is_first_attendance: boolean | null
+          no_symptoms_check: boolean | null
+          program: string
+          status: string
+          temperature_check: boolean | null
+          unique_code: string | null
+        }
+        Insert: {
+          age_group: string
+          category: string
+          checked_by?: string | null
+          checked_in_at?: string | null
+          child_id: string
+          child_name: string
+          created_at?: string
+          date: string
+          good_condition_check?: boolean | null
+          id?: string
+          is_first_attendance?: boolean | null
+          no_symptoms_check?: boolean | null
+          program: string
+          status: string
+          temperature_check?: boolean | null
+          unique_code?: string | null
+        }
+        Update: {
+          age_group?: string
+          category?: string
+          checked_by?: string | null
+          checked_in_at?: string | null
+          child_id?: string
+          child_name?: string
+          created_at?: string
+          date?: string
+          good_condition_check?: boolean | null
+          id?: string
+          is_first_attendance?: boolean | null
+          no_symptoms_check?: boolean | null
+          program?: string
+          status?: string
+          temperature_check?: boolean | null
+          unique_code?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "attendance_child_id_fkey"
+            columns: ["child_id"]
+            isOneToOne: false
+            referencedRelation: "children"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      attendance_summaries: {
+        Row: {
+          age_group_0_1_p1: number | null
+          age_group_0_1_p2: number | null
+          age_group_1_2_p1: number | null
+          age_group_1_2_p2: number | null
+          age_group_2_3_p1: number | null
+          age_group_2_3_p2: number | null
+          age_group_4_6_p1: number | null
+          age_group_4_6_p2: number | null
+          age_group_7_12_p1: number | null
+          age_group_7_12_p2: number | null
+          category_guest: number | null
+          category_membru: number | null
+          created_at: string
+          date: string
+          id: string
+          new_children_count: number
+          total: number
+          total_p1: number
+          total_p2: number
+          updated_at: string
+        }
+        Insert: {
+          age_group_0_1_p1?: number | null
+          age_group_0_1_p2?: number | null
+          age_group_1_2_p1?: number | null
+          age_group_1_2_p2?: number | null
+          age_group_2_3_p1?: number | null
+          age_group_2_3_p2?: number | null
+          age_group_4_6_p1?: number | null
+          age_group_4_6_p2?: number | null
+          age_group_7_12_p1?: number | null
+          age_group_7_12_p2?: number | null
+          category_guest?: number | null
+          category_membru?: number | null
+          created_at?: string
+          date: string
+          id?: string
+          new_children_count?: number
+          total?: number
+          total_p1?: number
+          total_p2?: number
+          updated_at?: string
+        }
+        Update: {
+          age_group_0_1_p1?: number | null
+          age_group_0_1_p2?: number | null
+          age_group_1_2_p1?: number | null
+          age_group_1_2_p2?: number | null
+          age_group_2_3_p1?: number | null
+          age_group_2_3_p2?: number | null
+          age_group_4_6_p1?: number | null
+          age_group_4_6_p2?: number | null
+          age_group_7_12_p1?: number | null
+          age_group_7_12_p2?: number | null
+          category_guest?: number | null
+          category_membru?: number | null
+          created_at?: string
+          date?: string
+          id?: string
+          new_children_count?: number
+          total?: number
+          total_p1?: number
+          total_p2?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      children: {
+        Row: {
+          age: number
+          age_group: string
+          birth_date: string
+          category: string
+          created_at: string
+          days_until_birthday: number
+          email: string | null
+          first_attendance_date: string | null
+          first_name: string
+          full_name: string
+          id: string
+          is_new: boolean | null
+          last_name: string
+          love_language: string | null
+          parents: string[]
+          phone: string | null
+          profile: string | null
+          updated_at: string
+        }
+        Insert: {
+          age: number
+          age_group: string
+          birth_date: string
+          category: string
+          created_at?: string
+          days_until_birthday: number
+          email?: string | null
+          first_attendance_date?: string | null
+          first_name: string
+          full_name: string
+          id?: string
+          is_new?: boolean | null
+          last_name: string
+          love_language?: string | null
+          parents?: string[]
+          phone?: string | null
+          profile?: string | null
+          updated_at?: string
+        }
+        Update: {
+          age?: number
+          age_group?: string
+          birth_date?: string
+          category?: string
+          created_at?: string
+          days_until_birthday?: number
+          email?: string | null
+          first_attendance_date?: string | null
+          first_name?: string
+          full_name?: string
+          id?: string
+          is_new?: boolean | null
+          last_name?: string
+          love_language?: string | null
+          parents?: string[]
+          phone?: string | null
+          profile?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
